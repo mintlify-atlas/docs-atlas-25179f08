@@ -1,0 +1,117 @@
+---
+title: "Gestión de mesas: estados, zonas y creación en lote"
+description: "Crea mesas individualmente o en lote (máx. 50), asígnalas a zonas del restaurante y controla sus 5 estados desde el panel de administración."
+keywords: ["mesas", "estado de mesa", "zona interior", "terraza", "barra", "salón VIP"]
+---
+
+Las mesas son la unidad central del salón en CUSCATLECO. Cada mesa tiene un número único, una capacidad de personas, una ubicación dentro del restaurante y un estado que refleja su situación en tiempo real. Desde el panel correspondiente puedes crear nuevas mesas, cambiar su estado conforme avanza el servicio y eliminar las que ya no estén en uso.
+
+## Estados de una mesa
+
+Cada mesa puede encontrarse en uno de los siguientes estados. El estado cambia automáticamente cuando se crea o cierra un pedido, o manualmente cuando el personal lo requiere.
+
+<CardGroup cols={2}>
+  <Card title="Disponible" icon="circle-check">
+    La mesa está libre y puede recibir clientes o asignársele un pedido nuevo.
+  </Card>
+  <Card title="Ocupada" icon="users">
+    La mesa tiene un pedido activo en curso. No se puede asignar a otro pedido hasta que el actual se cierre.
+  </Card>
+  <Card title="Reservada" icon="calendar">
+    La mesa está apartada para una reservación confirmada. No debe asignarse a pedidos espontáneos.
+  </Card>
+  <Card title="Limpieza" icon="sparkles">
+    La mesa acaba de desocuparse y está siendo preparada para el próximo cliente.
+  </Card>
+  <Card title="Mantenimiento" icon="wrench">
+    La mesa está fuera de servicio temporalmente por reparación o revisión.
+  </Card>
+</CardGroup>
+
+## Información de cada mesa
+
+| Campo | Descripción |
+|---|---|
+| **Número** | Identificador numérico único de la mesa (ej. Mesa 1, Mesa 7). |
+| **Capacidad** | Número máximo de personas que pueden sentarse. |
+| **Ubicación** | Zona del restaurante donde se encuentra la mesa. |
+| **Estado** | Situación actual: Disponible, Ocupada, Reservada, Limpieza o Mantenimiento. |
+
+## Ubicaciones disponibles
+
+El restaurante Sabor Cuscatleco cuenta con cuatro zonas. Puedes asignar cualquiera de estas ubicaciones al crear una mesa:
+
+<CardGroup cols={2}>
+  <Card title="Zona Interior" icon="house">
+    Mesas dentro del salón principal del restaurante.
+  </Card>
+  <Card title="Terraza" icon="sun">
+    Mesas en el área exterior. Ideales para grupos medianos.
+  </Card>
+  <Card title="Barra" icon="martini-glass">
+    Mesas de dos personas junto a la barra de servicio.
+  </Card>
+  <Card title="Salón VIP" icon="star">
+    Mesas de mayor capacidad para grupos grandes o eventos especiales.
+  </Card>
+</CardGroup>
+
+## Permisos por rol
+
+| Acción | Administrador | Mesero | Cajero | Cocina |
+|---|:---:|:---:|:---:|:---:|
+| Ver todas las mesas | ✓ | ✓ | — | — |
+| Crear mesa individual | ✓ | — | — | — |
+| Crear mesas en lote | ✓ | — | — | — |
+| Cambiar estado de mesa | ✓ | ✓ | — | — |
+| Eliminar mesa | ✓ | — | — | — |
+
+## Cómo crear una mesa
+
+<Steps>
+  <Step title="Accede a la sección de Mesas">
+    Ingresa al sistema como **Administrador** y selecciona **Mesas** en el menú de navegación del panel de administración.
+  </Step>
+  <Step title="Abre el formulario de nueva mesa">
+    Haz clic en el botón **Agregar mesa**. Aparecerá un formulario con los campos de la mesa.
+  </Step>
+  <Step title="Completa los campos">
+    Ingresa el **número** de mesa (debe ser único), la **capacidad** de personas y selecciona la **ubicación** de la lista desplegable. El estado inicial siempre es **Disponible**.
+  </Step>
+  <Step title="Guarda la mesa">
+    Haz clic en **Guardar**. La nueva mesa aparecerá de inmediato en el listado del salón.
+  </Step>
+</Steps>
+
+<Tip>
+  Si estás configurando el restaurante por primera vez, usa la opción **Crear mesas en lote** para registrar hasta 50 mesas de una sola vez. Solo define el rango de números, la capacidad y la ubicación y el sistema las crea todas automáticamente. Esto ahorra tiempo al momento de la puesta en marcha.
+</Tip>
+
+## Cómo cambiar el estado de una mesa
+
+<Steps>
+  <Step title="Localiza la mesa en el listado">
+    En el panel de Mesas verás todas las mesas con su estado actual indicado por color o etiqueta.
+  </Step>
+  <Step title="Selecciona la acción de cambio de estado">
+    Haz clic en la mesa o en el ícono de edición de estado. Se abrirá un selector con los cinco estados disponibles.
+  </Step>
+  <Step title="Elige el nuevo estado">
+    Selecciona el estado que corresponde a la situación actual de la mesa: **Disponible**, **Ocupada**, **Reservada**, **Limpieza** o **Mantenimiento**.
+  </Step>
+  <Step title="Confirma el cambio">
+    Haz clic en **Confirmar**. El estado se actualiza de inmediato y el sistema registra quién realizó el cambio y cuándo.
+  </Step>
+</Steps>
+
+<Note>
+  El sistema registra automáticamente el usuario que realizó cada cambio de estado. Esta información queda guardada en el log de auditoría del sistema.
+</Note>
+
+## Cómo eliminar una mesa
+
+Para eliminar una mesa, selecciónala en el listado y haz clic en **Eliminar**. Solo el **Administrador** puede realizar esta acción.
+
+<Warning>
+  No es posible eliminar una mesa que tenga pedidos activos o historial de pedidos asociado. Cambia el estado a **Mantenimiento** para retirarla del servicio sin eliminarla.
+</Warning>

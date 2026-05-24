@@ -1,0 +1,90 @@
+---
+title: "Panel de Cocina: preparación y actualización de pedidos"
+description: "El rol Cocina tiene 4 permisos en CUSCATLECO: visualiza pedidos entrantes, marca EnPreparacion y notifica cuando los platillos están Listos."
+---
+
+El rol **Cocina** está pensado para el personal de preparación que necesita ver los pedidos entrantes y actualizar su estado conforme avanza la elaboración de cada plato. Su panel está completamente enfocado en la operación interna de la cocina: recibir pedidos, marcarlos en preparación y notificar cuando están listos. No tiene acceso a facturación, mesas, menú ni ningún módulo administrativo.
+
+## Acceso al panel
+
+El personal de cocina accede a su panel exclusivo en:
+
+```
+/cocina
+```
+
+Esta ruta está protegida por el permiso `ver_cocina`. Sin ese permiso, el sistema redirige a `/403`.
+
+## Permisos asignados
+
+El rol Cocina cuenta con **4 permisos**, el conjunto más reducido y específico del sistema.
+
+| Permiso | Módulo | Descripción |
+|---|---|---|
+| `ver_dashboard` | General | Ver el panel principal |
+| `ver_pedidos` | Pedidos | Ver el listado de pedidos activos enviados desde sala |
+| `actualizar_estado_pedido` | Pedidos | Cambiar el estado de un pedido durante la preparación |
+| `ver_cocina` | Cocina | Acceder al panel de cocina |
+
+## Lo que Cocina NO puede hacer
+
+<Note>
+  El rol Cocina tiene un alcance deliberadamente acotado. Cualquier intento de acceso a los módulos siguientes resulta en una respuesta `403 Permiso denegado`.
+</Note>
+
+- **Facturación**: no puede generar ni consultar facturas (sin `generar_factura`).
+- **Gestión de mesas**: no puede ver el plano de mesas ni actualizar su estado (sin `listar_mesas`, `gestionar_mesas` ni `actualizar_estado_mesa`).
+- **Gestión del menú**: no puede ver ni modificar el catálogo de platillos (sin `ver_menu` ni `gestionar_menu`).
+- **Crear pedidos**: no puede registrar nuevos pedidos (sin `crear_pedido`).
+- **Gestión de usuarios**: no puede administrar cuentas ni roles de empleados.
+- **Reservaciones y clientes**: no tiene acceso a estos módulos.
+- **Reportes y auditoría**: no puede consultar estadísticas ni el log de auditoría.
+
+## Flujo de preparación
+
+<Steps>
+  <Step title="Recibir pedidos entrantes">
+    Cuando un mesero registra y confirma un pedido desde el panel de sala, este aparece automáticamente en la vista de Cocina con estado `Pendiente`. El panel muestra el número de mesa (o "Para llevar"), los platillos solicitados, las cantidades, las notas especiales por platillo y la hora de recepción.
+  </Step>
+  <Step title="Iniciar la preparación">
+    El personal de cocina selecciona el pedido y cambia su estado a `EnPreparacion`. Esto actualiza el campo `pedido_estado` en la base de datos y notifica que el pedido está siendo elaborado. La marca de tiempo queda registrada en el sistema.
+  </Step>
+  <Step title="Marcar el pedido como listo">
+    Al terminar la preparación de todos los platillos del pedido, el personal cambia el estado a `Listo`. El sistema registra la hora en `pedido_listo_en` y el mesero responsable recibe la notificación para recoger y entregar el pedido en la mesa.
+  </Step>
+</Steps>
+
+## Estados de pedido que maneja Cocina
+
+El rol Cocina únicamente interactúa con los estados intermedios del ciclo de vida de un pedido. El diagrama completo de estados es el siguiente:
+
+| Estado | Responsable | Descripción |
+|---|---|---|
+| `Pendiente` | Mesero | Pedido registrado, en espera de que Cocina lo tome |
+| `EnPreparacion` | **Cocina** | Cocina ha iniciado la elaboración |
+| `Listo` | **Cocina** | Todos los platillos están listos para ser entregados |
+| `Entregado` | Mesero | El mesero llevó el pedido a la mesa |
+| `Cerrado` | Cajero | El pedido fue facturado y cerrado |
+| `Cancelado` | Mesero / Admin | El pedido fue cancelado con motivo registrado |
+
+<Warning>
+  Una vez que Cocina marca un pedido como `Listo`, el estado ya no puede revertirse a `EnPreparacion` desde el panel de cocina. Si existe un error en el pedido, comuníquelo al mesero o al Administrador para gestionar la corrección o cancelación.
+</Warning>
+
+## Información visible en el panel
+
+Aunque el rol Cocina no puede gestionar el menú, sí tiene visibilidad sobre los detalles de cada pedido que le llega, incluyendo:
+
+- Número de mesa o indicador de pedido para llevar
+- Listado de platillos con cantidad y precio unitario
+- Notas u observaciones especiales por ítem (`detalle_pedido_notas`)
+- Hora en que fue enviado a cocina (`pedido_enviado_cocina_en`)
+- Observaciones generales del pedido (`pedido_observaciones`)
+
+<Info>
+  El panel de cocina está diseñado para operar en una pantalla fija dentro de la cocina. Se recomienda mantener la sesión activa durante todo el turno. Recuerde que las sesiones expiran tras **30 minutos de inactividad**.
+</Info>
+
+---
+
+Volver a [Roles y Acceso](/roles/descripcion-roles)

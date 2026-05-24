@@ -1,0 +1,90 @@
+---
+title: "Panel del Mesero: toma de pedidos y atención en sala"
+description: "El rol Mesero tiene 8 permisos en CUSCATLECO: crea pedidos, gestiona reservaciones, actualiza el estado de mesas y consulta el menú disponible."
+---
+
+El rol **Mesero** está diseñado para el personal de sala que atiende directamente a los comensales. Desde su panel, el mesero puede consultar el estado de las mesas, registrar nuevos pedidos, gestionar reservaciones y actualizar el estado de las mesas conforme avanza el servicio. Su alcance se limita al ciclo de atención en sala; no tiene acceso a funciones de facturación ni de administración del sistema.
+
+## Acceso al panel
+
+El Mesero accede a su panel exclusivo en:
+
+```
+/mesero
+```
+
+Esta ruta está protegida por el permiso `ver_mesero`. Sin ese permiso, el sistema redirige a `/403`.
+
+## Permisos asignados
+
+El rol Mesero cuenta con **8 permisos** orientados a la atención en sala y la gestión de pedidos.
+
+| Permiso | Módulo | Descripción |
+|---|---|---|
+| `ver_dashboard` | General | Ver el panel principal |
+| `ver_menu` | Menú | Consultar el catálogo de platillos disponibles |
+| `crear_pedido` | Pedidos | Registrar nuevos pedidos para una mesa o para llevar |
+| `ver_pedidos` | Pedidos | Ver el listado de pedidos activos |
+| `gestionar_reservaciones` | Reservaciones | Crear y gestionar reservaciones de clientes |
+| `actualizar_estado_mesa` | Mesas | Cambiar el estado de una mesa (Disponible, Ocupada, Limpieza, etc.) |
+| `listar_mesas` | Mesas | Ver el plano de mesas y su estado en tiempo real |
+| `ver_mesero` | Mesero | Acceder al panel de mesero |
+
+## Lo que el Mesero NO puede hacer
+
+<Note>
+  El Mesero no tiene acceso a los siguientes módulos. Cualquier intento de acceso resulta en una respuesta `403 Permiso denegado`.
+</Note>
+
+- **Facturación**: no puede generar ni consultar facturas. El cierre económico de un pedido es responsabilidad exclusiva del Cajero.
+- **Gestión de usuarios**: no puede crear, editar ni desactivar cuentas de empleados.
+- **Gestión del menú**: puede ver el menú pero no modificarlo (sin `gestionar_menu`).
+- **Gestión de mesas**: puede actualizar el estado de una mesa y listarlas, pero no puede crear ni eliminar mesas (sin `gestionar_mesas`).
+- **Reportes y auditoría**: no tiene acceso a estadísticas ni al log de auditoría.
+- **Actualización de estado de pedido**: no puede avanzar el estado de un pedido una vez enviado a cocina; ese permiso corresponde a Cocina y Administrador.
+
+## Flujo de trabajo en sala
+
+<Steps>
+  <Step title="Revisar el plano de mesas">
+    Al iniciar el turno, el mesero consulta el listado de mesas para identificar cuáles están disponibles, ocupadas, reservadas o en limpieza. Los estados posibles de una mesa son: `Disponible`, `Ocupada`, `Reservada`, `Limpieza` y `Mantenimiento`.
+  </Step>
+  <Step title="Asignar la mesa al cliente">
+    Cuando llegan los comensales, el mesero actualiza el estado de la mesa a `Ocupada` usando el permiso `actualizar_estado_mesa`.
+  </Step>
+  <Step title="Consultar el menú y tomar el pedido">
+    El mesero consulta el catálogo de platillos disponibles (`ver_menu`) y registra el pedido (`crear_pedido`). Puede agregar observaciones por platillo y elegir entre pedido de salón (`Salon`) o para llevar (`Llevar`).
+  </Step>
+  <Step title="Enviar el pedido a cocina">
+    Al confirmar el pedido, este queda registrado con estado `Pendiente` y es visible de inmediato en el panel de Cocina. El sistema registra la marca de tiempo `pedido_enviado_cocina_en`.
+  </Step>
+  <Step title="Entregar el pedido">
+    Cuando Cocina cambia el estado a `Listo`, el mesero recibe la notificación y lleva los platillos a la mesa. El cambio de estado a `Entregado` lo realiza el Administrador.
+  </Step>
+  <Step title="Gestionar reservaciones">
+    En cualquier momento del turno, el mesero puede crear o actualizar reservaciones para clientes que soliciten mesa con anticipación.
+  </Step>
+  <Step title="Liberar la mesa">
+    Al finalizar el servicio de una mesa, el mesero actualiza su estado a `Limpieza` o `Disponible` según corresponda, preparándola para el siguiente grupo de comensales.
+  </Step>
+</Steps>
+
+## Estados de mesa disponibles
+
+El mesero puede transicionar las mesas entre los siguientes estados según el progreso del servicio:
+
+| Estado | Descripción |
+|---|---|
+| `Disponible` | Mesa libre, lista para recibir comensales |
+| `Ocupada` | Mesa con clientes activos |
+| `Reservada` | Mesa bloqueada por una reservación confirmada |
+| `Limpieza` | Mesa en proceso de limpieza entre turnos |
+| `Mantenimiento` | Mesa fuera de servicio temporalmente |
+
+<Info>
+  El pedido registrado queda vinculado al mesero que lo creó mediante el campo `id_mesero` en la tabla `pedidos`. Esto permite al Administrador rastrear la actividad por empleado en los reportes.
+</Info>
+
+---
+
+Volver a [Roles y Acceso](/roles/descripcion-roles)

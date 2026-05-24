@@ -1,0 +1,102 @@
+{
+  "projectType": "saas",
+  "projectName": "CUSCATLECO - Sistema POS Restaurante",
+  "projectDescription": "Sistema de punto de venta (POS) para el Restaurante Sabor Cuscatleco, con gestión de pedidos, roles de usuario (Administrador, Mesero, Cajero, Cocina) y facturación electrónica.",
+  "theme": "almond",
+  "primaryColor": "#848c8e",
+  "lightColor": "#11161e",
+  "darkColor": "#cfd0d2",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guía de Usuario",
+        "groups": [
+          {
+            "group": "Introducción",
+            "pages": [
+              "introduccion",
+              "instalacion"
+            ]
+          },
+          {
+            "group": "Roles y Acceso",
+            "pages": [
+              "roles/descripcion-roles",
+              "roles/administrador",
+              "roles/mesero",
+              "roles/cajero",
+              "roles/cocina"
+            ]
+          },
+          {
+            "group": "Funcionalidades Principales",
+            "pages": [
+              "funcionalidades/gestion-mesas",
+              "funcionalidades/gestion-pedidos",
+              "funcionalidades/menu-platillos",
+              "funcionalidades/facturacion",
+              "funcionalidades/gestion-empleados"
+            ]
+          },
+          {
+            "group": "Base de Datos",
+            "pages": [
+              "base-de-datos/esquema",
+              "base-de-datos/auditoria"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Referencia API",
+        "groups": [
+          {
+            "group": "Autenticación",
+            "pages": [
+              "api/autenticacion"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/mesas",
+              "api/pedidos",
+              "api/platillos",
+              "api/empleados"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Gestión de mesas con estados (Disponible, Ocupada, Reservada, Limpieza, Mantenimiento)",
+    "Flujo de pedidos de extremo a extremo: creación, preparación, entrega y cierre",
+    "Facturación electrónica con soporte para Consumidor Final y Crédito Fiscal",
+    "Sistema de roles y permisos granular (Administrador, Mesero, Cajero, Cocina)",
+    "Gestión de empleados con autenticación segura mediante bcrypt",
+    "Auditoría completa de acciones con registro de datos anteriores y nuevos (JSON)",
+    "Menú con categorías, imágenes y disponibilidad por platillo",
+    "Sistema de rangos de cliente (Bronce, Plata, Oro) con descuentos automáticos"
+  ],
+  "publicApiSurface": [
+    "POST /api/login",
+    "GET /api/usuario",
+    "POST /api/mesas",
+    "POST /api/mesas/bulk",
+    "GET /api/mesas",
+    "DELETE /api/mesas/:id",
+    "PATCH /api/mesas/:id/estado",
+    "POST /api/pedidos/iniciar",
+    "POST /api/pedidos/crear",
+    "POST /api/platillos",
+    "GET /api/platillos",
+    "GET /api/platillos/:id",
+    "PUT /api/platillos/:id",
+    "PATCH /api/platillos/:id/estado",
+    "POST /api/empleados",
+    "GET /api/empleados",
+    "DELETE /api/empleados/:id",
+    "PUT /api/empleados/:id"
+  ]
+}

@@ -1,0 +1,170 @@
+---
+title: 'Autenticación con sesiones en la API de CUSCATLECO'
+description: 'Inicia sesión con POST /api/login y gestiona sesiones basadas en cookies express-session. Duración 30 min. Errores 401 y 403 explicados.'
+keywords: ['autenticación', 'login', 'sesión', 'cookie', 'express-session']
+sidebarTitle: 'Autenticación'
+icon: 'lock'
+---
+
+La API de CUSCATLECO utiliza sesiones basadas en cookies gestionadas por `express-session`. Al iniciar sesión correctamente, el servidor genera una cookie de sesión que debe enviarse en todas las solicitudes posteriores. Las sesiones tienen una duración de 30 minutos de inactividad. No se utilizan tokens JWT ni cabeceras de autorización; el navegador o cliente HTTP debe almacenar y reenviar la cookie automáticamente.
+
+<Info>
+  Todos los endpoints de la API (excepto `POST /api/login`) requieren una sesión activa. Si la cookie no está presente o la sesión expiró, el servidor responde con `401`.
+</Info>
+
+## URL base
+
+```
+http://localhost:3000
+```
+
+---
+
+## POST /api/login
+
+Autentica a un usuario con su correo y contraseña. Si las credenciales son válidas y el usuario está activo, el servidor crea una sesión y devuelve los datos del usuario junto con su rol y permisos.
+
+### Cuerpo de la solicitud
+
+<ParamField body="usuario_email" type="string" required>
+  Correo electrónico del usuario registrado en el sistema.
+</ParamField>
+
+<ParamField body="usuario_password" type="string" required>
+  Contraseña del usuario en texto plano. El servidor la compara contra el hash almacenado con bcrypt.
+</ParamField>
+
+### Respuesta exitosa — 200
+
+<ResponseField name="mensaje" type="string">
+  Mensaje de confirmación. Ejemplo: `"Login exitoso"`.
+</ResponseField>
+
+<ResponseField name="rol" type="string">
+  Nombre del rol asignado al usuario. Valores posibles: `Administrador`, `Mesero`, `Cajero`, `Cocina`.
+</ResponseField>
+
+<ResponseField name="usuario" type="string">
+  Nombre completo del usuario autenticado.
+</ResponseField>
+
+La sesión almacenada en el servidor contiene además los campos `id`, `permisos` (array de strings) y `nombre`, accesibles mediante `GET /api/usuario`.
+
+### Ejemplo
+
+```bash cURL
+curl -X POST http://localhost:3000/api/login \
+  -H "Content-Type: application/json" \
+  -c cookies.txt \
+  -d '{
+    "usuario_email": "admin@saborcuscatleco.com",
+    "usuario_password": "123456"
+  }'
+```
+
+```json Respuesta 200
+{
+  "mensaje": "Login exitoso",
+  "rol": "Administrador",
+  "usuario": "Administrador"
+}
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `400`  | Faltan `usuario_email` o `usuario_password` en el cuerpo. |
+| `401`  | Credenciales incorrectas o usuario no encontrado. |
+
+```json Error 401
+{
+  "error": "Credenciales incorrectas"
+}
+```
+
+---
+
+## GET /api/usuario
+
+Devuelve los datos del usuario correspondiente a la sesión activa. Útil para verificar el estado de autenticación y recuperar el perfil sin volver a autenticar.
+
+### Respuesta exitosa — 200
+
+<ResponseField name="id" type="number">
+  Identificador único del usuario en la base de datos.
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  Nombre completo del usuario.
+</ResponseField>
+
+<ResponseField name="rol" type="string">
+  Rol activo del usuario: `Administrador`, `Mesero`, `Cajero` o `Cocina`.
+</ResponseField>
+
+<ResponseField name="permisos" type="string[]">
+  Lista de permisos asignados al rol del usuario. Ejemplos: `gestionar_mesas`, `crear_pedido`, `ver_menu`.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl http://localhost:3000/api/usuario \
+  -b cookies.txt
+```
+
+```json Respuesta 200
+{
+  "id": 1,
+  "nombre": "Administrador",
+  "rol": "Administrador",
+  "permisos": [
+    "ver_dashboard",
+    "gestionar_usuarios",
+    "gestionar_menu",
+    "crear_pedido",
+    "gestionar_mesas"
+  ]
+}
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `401`  | No hay sesión activa o la cookie de sesión expiró. |
+
+```json Error 401
+{
+  "error": "Sesión no válida"
+}
+```
+
+---
+
+## Manejo de errores de sesión
+
+Todos los endpoints protegidos pueden devolver los siguientes errores relacionados con autenticación y autorización:
+
+<AccordionGroup>
+  <Accordion title="401 — Sin sesión activa">
+    La solicitud no incluye una cookie de sesión válida, o la sesión expiró tras 30 minutos de inactividad. El cliente debe volver a autenticarse con `POST /api/login`.
+
+    ```json
+    { "error": "Sesión no válida" }
+    ```
+  </Accordion>
+
+  <Accordion title="403 — Permiso denegado">
+    El usuario tiene sesión activa pero su rol no incluye el permiso requerido por el endpoint. Cada endpoint indica en su documentación qué permiso es necesario.
+
+    ```json
+    { "error": "Permiso denegado" }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+  Al usar curl en múltiples solicitudes, guarda las cookies con `-c cookies.txt` en el login y envíalas con `-b cookies.txt` en las solicitudes siguientes.
+</Tip>

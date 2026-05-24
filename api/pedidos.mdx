@@ -1,0 +1,190 @@
+---
+title: 'API de pedidos: iniciar y crear órdenes en CUSCATLECO'
+description: 'POST /api/pedidos/iniciar valida disponibilidad de mesa; /crear la omite. Ambos requieren crear_pedido y registran auditoría automáticamente.'
+keywords: ['pedidos', 'crear_pedido', 'iniciar pedido', 'salon', 'llevar', 'POS']
+sidebarTitle: 'Pedidos'
+icon: 'receipt'
+---
+
+El módulo de pedidos gestiona el ciclo de vida de los pedidos en el restaurante. Los pedidos pueden ser de tipo **Salon** (asociados a una mesa física) o **Llevar** (sin mesa asignada). Ambos endpoints requieren el permiso `crear_pedido` y registran cada operación en el log de auditoría. Todos los endpoints requieren una sesión activa.
+
+## Estados de pedido
+
+Un pedido transita por los siguientes estados a lo largo de su ciclo de vida:
+
+| Estado | Descripción |
+|--------|-------------|
+| `Pendiente` | Estado inicial al crear un pedido. Aún no ha sido enviado a cocina. |
+| `EnPreparacion` | El pedido fue enviado a cocina y está siendo preparado. |
+| `Listo` | Cocina finalizó la preparación. El pedido está listo para entrega. |
+| `Entregado` | El mesero entregó el pedido al cliente en la mesa. |
+| `Cerrado` | El pedido fue facturado y el proceso fue completado. |
+| `Cancelado` | El pedido fue anulado antes de completarse. |
+
+## Tipos de pedido
+
+| Tipo | Descripción |
+|------|-------------|
+| `Salon` | Pedido en mesa del restaurante. Requiere `id_mesa` y la mesa debe estar en estado `Disponible`. |
+| `Llevar` | Pedido para llevar. No requiere mesa; `id_mesa` se almacena como `null`. |
+
+---
+
+## POST /api/pedidos/iniciar
+
+Inicia un nuevo pedido. Si el tipo es `Salon`, verifica que la mesa exista y esté disponible, luego la marca automáticamente como `Ocupada`. Si el tipo es `Llevar`, no se requiere mesa.
+
+**Permiso requerido:** `crear_pedido`  
+**Auditoría:** registra la acción en `auditoria_log`.
+
+### Cuerpo de la solicitud
+
+<ParamField body="tipo" type="string" required>
+  Tipo de pedido. Valores válidos: `Salon` o `Llevar`.
+</ParamField>
+
+<ParamField body="id_mesa" type="integer">
+  ID de la mesa donde se atenderá el pedido. Requerido cuando `tipo` es `Salon`. Se ignora cuando `tipo` es `Llevar`.
+</ParamField>
+
+### Respuesta exitosa — 201
+
+<ResponseField name="id_pedido" type="integer">
+  ID generado para el nuevo pedido.
+</ResponseField>
+
+<ResponseField name="pedido_estado" type="string">
+  Estado inicial del pedido. Siempre es `Pendiente`.
+</ResponseField>
+
+<ResponseField name="pedido_tipo" type="string">
+  Tipo del pedido creado: `Salon` o `Llevar`.
+</ResponseField>
+
+### Ejemplo — Pedido en salón
+
+```bash cURL
+curl -X POST http://localhost:3000/api/pedidos/iniciar \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "tipo": "Salon",
+    "id_mesa": 3
+  }'
+```
+
+```json Respuesta 201
+{
+  "id_pedido": 42,
+  "pedido_estado": "Pendiente",
+  "pedido_tipo": "Salon"
+}
+```
+
+### Ejemplo — Pedido para llevar
+
+```bash cURL
+curl -X POST http://localhost:3000/api/pedidos/iniciar \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "tipo": "Llevar"
+  }'
+```
+
+```json Respuesta 201
+{
+  "id_pedido": 43,
+  "pedido_estado": "Pendiente",
+  "pedido_tipo": "Llevar"
+}
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `400`  | `tipo` es inválido, o `tipo` es `Salon` pero no se envió `id_mesa`, o la mesa no está en estado `Disponible`. |
+| `401`  | Sesión no activa. |
+| `403`  | Sin permiso `crear_pedido`. |
+| `404`  | La mesa indicada con `id_mesa` no existe. |
+
+---
+
+## POST /api/pedidos/crear
+
+Crea un pedido completo en el sistema. A diferencia de `iniciar`, este endpoint permite especificar directamente el tipo y la mesa sin las validaciones de disponibilidad de mesa que aplica `iniciar`. Ambos endpoints comparten la misma estructura de respuesta.
+
+**Permiso requerido:** `crear_pedido`  
+**Auditoría:** registra la acción en `auditoria_log`.
+
+### Cuerpo de la solicitud
+
+<ParamField body="tipo" type="string" required>
+  Tipo de pedido. Valores válidos: `Salon` o `Llevar`.
+</ParamField>
+
+<ParamField body="id_mesa" type="integer">
+  ID de la mesa asociada al pedido. Requerido cuando `tipo` es `Salon`. No se usa en pedidos `Llevar`.
+</ParamField>
+
+### Respuesta exitosa — 201
+
+<ResponseField name="id_pedido" type="integer">
+  ID generado para el nuevo pedido.
+</ResponseField>
+
+<ResponseField name="pedido_estado" type="string">
+  Estado inicial del pedido. Siempre es `Pendiente`.
+</ResponseField>
+
+<ResponseField name="pedido_tipo" type="string">
+  Tipo del pedido: `Salon` o `Llevar`.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl -X POST http://localhost:3000/api/pedidos/crear \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "tipo": "Salon",
+    "id_mesa": 5
+  }'
+```
+
+```json Respuesta 201
+{
+  "id_pedido": 44,
+  "pedido_estado": "Pendiente",
+  "pedido_tipo": "Salon"
+}
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `400`  | `tipo` no es `Salon` ni `Llevar`. |
+| `401`  | Sesión no activa. |
+| `403`  | Sin permiso `crear_pedido`. |
+| `500`  | Error interno al insertar el pedido. |
+
+---
+
+## Diferencia entre iniciar y crear
+
+<AccordionGroup>
+  <Accordion title="POST /api/pedidos/iniciar — con validaciones de mesa">
+    Verifica que la mesa exista y esté en estado `Disponible` antes de crear el pedido. Si la validación pasa, actualiza automáticamente el estado de la mesa a `Ocupada`. Es el endpoint recomendado para el flujo estándar de un mesero atendiendo una mesa.
+  </Accordion>
+
+  <Accordion title="POST /api/pedidos/crear — creación directa">
+    Crea el pedido sin validar el estado de la mesa. No modifica el estado de la mesa. Útil para flujos donde el estado de la mesa se gestiona de forma independiente, como pedidos para llevar o integraciones externas.
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  El mesero que inicia sesión queda registrado como `id_mesero` del pedido. Asegúrate de que la sesión activa corresponda al usuario correcto antes de crear un pedido.
+</Warning>

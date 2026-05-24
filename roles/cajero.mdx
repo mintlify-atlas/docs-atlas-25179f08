@@ -1,0 +1,103 @@
+---
+title: "Panel del Cajero en CUSCATLECO: facturación y cierre"
+description: "El rol Cajero tiene 6 permisos en CUSCATLECO: emite facturas ConsumidorFinal y CreditoFiscal, gestiona clientes con rangos y cierra pedidos."
+---
+
+El rol **Cajero** cubre el cierre económico del ciclo de servicio en el restaurante. Una vez que Cocina marca un pedido como listo y el mesero lo entrega, corresponde al Cajero emitir la factura electrónica y cerrar el pedido. El Cajero puede generar comprobantes de tipo **Consumidor Final** o **Crédito Fiscal**, gestionar el registro de clientes y consultar el menú, pero no interviene en la creación de pedidos ni en la operación de sala.
+
+## Acceso al panel
+
+El Cajero accede a su panel exclusivo en:
+
+```
+/cajero
+```
+
+Esta ruta está protegida por el permiso `ver_cajero`. Sin ese permiso, el sistema redirige a `/403`.
+
+## Permisos asignados
+
+El rol Cajero cuenta con **6 permisos** enfocados en facturación y atención al cliente.
+
+| Permiso | Módulo | Descripción |
+|---|---|---|
+| `ver_dashboard` | General | Ver el panel principal |
+| `ver_menu` | Menú | Consultar el catálogo de platillos para referencia en la factura |
+| `ver_pedidos` | Pedidos | Ver el listado de pedidos listos para facturar |
+| `generar_factura` | Facturación | Emitir facturas electrónicas (Consumidor Final o Crédito Fiscal) |
+| `gestionar_clientes` | Clientes | Ver y administrar clientes registrados y sus rangos de fidelidad |
+| `ver_cajero` | Cajero | Acceder al panel de cajero |
+
+## Lo que el Cajero NO puede hacer
+
+<Note>
+  El Cajero no tiene acceso a los siguientes módulos. Cualquier intento de acceso resulta en una respuesta `403 Permiso denegado`.
+</Note>
+
+- **Crear pedidos**: no puede registrar nuevos pedidos (sin `crear_pedido`). Esa responsabilidad recae en el Mesero o el Administrador.
+- **Actualizar estado de pedido**: no puede cambiar manualmente el estado de los pedidos en el flujo de cocina.
+- **Gestión del menú**: puede ver el menú pero no modificarlo (sin `gestionar_menu`).
+- **Gestión de mesas**: no tiene acceso al plano de mesas ni puede cambiar su estado (sin `listar_mesas`, `gestionar_mesas` ni `actualizar_estado_mesa`).
+- **Gestión de usuarios**: no puede crear ni editar cuentas de empleados.
+- **Reservaciones**: no puede crear ni gestionar reservaciones.
+- **Reportes y auditoría**: no tiene acceso a estadísticas ni al log de auditoría del sistema.
+
+## Flujo de facturación
+
+<Steps>
+  <Step title="Revisar pedidos pendientes de pago">
+    El Cajero consulta el listado de pedidos con estado `Listo` o `Entregado` que aún no tienen factura asociada. Puede identificar la mesa, el mesero responsable y el total del pedido.
+  </Step>
+  <Step title="Seleccionar el tipo de comprobante">
+    Según la solicitud del cliente, el Cajero elige entre dos tipos de documento fiscal:
+
+    - **Consumidor Final**: para clientes que no requieren crédito fiscal. Solo necesita el nombre del cliente.
+    - **Crédito Fiscal**: para empresas o personas que necesitan deducir IVA. Requiere NIT, NRC y dirección fiscal del cliente.
+  </Step>
+  <Step title="Completar los datos fiscales">
+    Dependiendo del tipo de comprobante elegido, el Cajero completa los campos obligatorios. La factura incluye subtotal, IVA calculado automáticamente y total.
+
+    ```
+    factura_subtotal  →  monto antes de IVA
+    factura_iva       →  impuesto calculado
+    factura_total     →  monto final a cobrar
+    ```
+  </Step>
+  <Step title="Emitir la factura">
+    Al confirmar, el sistema genera la factura con un correlativo único (`factura_correlativo`), la asocia al pedido y al cajero que la emitió, y registra la fecha y hora de emisión.
+  </Step>
+  <Step title="Cerrar el pedido">
+    Con la factura emitida, el pedido avanza al estado `Cerrado`. El ciclo de servicio queda completado y la mesa queda disponible para liberar.
+  </Step>
+</Steps>
+
+## Tipos de factura
+
+CUSCATLECO soporta los dos tipos de documento fiscal utilizados en El Salvador:
+
+<CardGroup cols={2}>
+  <Card title="Consumidor Final" icon="receipt">
+    Para clientes particulares. Requiere únicamente el nombre del cliente. El sistema puede asociar la factura a un cliente registrado o generar una para "Consumidor Final" anónimo.
+  </Card>
+  <Card title="Crédito Fiscal" icon="building-columns">
+    Para personas jurídicas o naturales con actividad económica. Requiere NIT (`factura_dui_nit`), NRC (`factura_nrc`) y dirección fiscal (`factura_direccion`).
+  </Card>
+</CardGroup>
+
+## Gestión de clientes
+
+El Cajero puede registrar nuevos clientes, consultar su historial de consumo y verificar su rango de fidelidad. Los rangos vigentes y sus descuentos son:
+
+| Rango | Pedidos mínimos | Consumo mínimo | Descuento |
+|---|---|---|---|
+| Bronce | 1 | $0.00 | 5% |
+| Plata | 5 | $100.00 | 10% |
+| Oro | 15 | $300.00 | 15% |
+
+<Info>
+  El descuento del rango se aplica al calcular el total del pedido antes de generar la factura. El Cajero debe verificar el rango del cliente al momento de facturar para aplicar el beneficio correspondiente.
+</Info>
+
+---
+
+Volver a [Roles y Acceso](/roles/descripcion-roles)

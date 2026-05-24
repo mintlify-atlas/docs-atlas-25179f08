@@ -1,0 +1,86 @@
+---
+title: "Menú y platillos: gestión de categorías, precios e imágenes"
+description: "Administra el menú de CUSCATLECO: crea platillos en 4 categorías (Entradas, Platos Fuertes, Bebidas, Postres), sube imágenes y controla disponibilidad."
+keywords: ["menú", "platillos", "categorías", "disponibilidad", "imagen", "precio"]
+---
+
+El módulo de menú centraliza todo lo relacionado con la oferta gastronómica del restaurante. Desde aquí puedes registrar nuevos platillos, actualizarlos, subir imágenes atractivas y activar o desactivar su disponibilidad para que el equipo de meseros y cocina siempre tenga información actualizada. Solo los usuarios con el permiso **gestionar_menu** —típicamente el Administrador— pueden crear y editar platillos.
+
+## Categorías del menú
+
+Los platillos se organizan en cuatro categorías predefinidas:
+
+<CardGroup cols={2}>
+  <Card title="Entradas" icon="salad">
+    Platillos para comenzar la experiencia gastronómica.
+  </Card>
+  <Card title="Platos Fuertes" icon="utensils">
+    Los platos principales del restaurante.
+  </Card>
+  <Card title="Bebidas" icon="glass-water">
+    Bebidas frías y calientes para acompañar cualquier pedido.
+  </Card>
+  <Card title="Postres" icon="cake-candles">
+    Opciones dulces para cerrar la comida.
+  </Card>
+</CardGroup>
+
+## Información de cada platillo
+
+| Campo | Descripción |
+|---|---|
+| **Nombre** | Nombre visible del platillo en el menú y en los pedidos. |
+| **Descripción** | Texto explicativo de ingredientes o características del platillo. |
+| **Precio** | Precio unitario en dólares. |
+| **Imagen** | Foto del platillo que aparece en el menú digital. |
+| **Disponible** | Indica si el platillo puede pedirse. Los platillos no disponibles no se muestran al mesero. |
+| **Categoría** | Grupo al que pertenece el platillo (Entradas, Platos Fuertes, Bebidas o Postres). |
+
+## Permisos por rol
+
+| Acción | Administrador | Mesero | Cajero | Cocina |
+|---|:---:|:---:|:---:|:---:|
+| Ver el menú | ✓ | ✓ | ✓ | ✓ |
+| Agregar platillo | ✓ | — | — | — |
+| Editar platillo | ✓ | — | — | — |
+| Activar / desactivar platillo | ✓ | — | — | — |
+
+## Cómo agregar un nuevo platillo
+
+<Steps>
+  <Step title="Accede a la sección de Menú">
+    Ingresa como **Administrador** y selecciona **Menú** en el panel de navegación. Verás el listado de todos los platillos registrados.
+  </Step>
+  <Step title="Abre el formulario de nuevo platillo">
+    Haz clic en **Agregar platillo**. Se mostrará un formulario con todos los campos necesarios.
+  </Step>
+  <Step title="Completa la información del platillo">
+    Ingresa el **nombre**, la **descripción**, el **precio** y selecciona la **categoría** correspondiente de la lista desplegable.
+  </Step>
+  <Step title="Sube la imagen (opcional)">
+    Haz clic en **Seleccionar imagen** y elige un archivo de tu dispositivo. El sistema acepta imágenes en los formatos más comunes (JPG, PNG, WebP). La imagen se sube automáticamente al confirmar el formulario.
+  </Step>
+  <Step title="Guarda el platillo">
+    Haz clic en **Guardar**. El platillo quedará disponible de inmediato en el menú y podrá incluirse en los pedidos del mesero.
+  </Step>
+</Steps>
+
+<Note>
+  Las imágenes se almacenan en el servidor bajo la carpeta `/uploads/`. Sube imágenes de buena calidad y resolución razonable (se recomienda al menos 400 × 400 px) para que luzcan bien en el menú digital. Si no subes una imagen, el platillo se mostrará con un ícono genérico.
+</Note>
+
+## Cómo editar un platillo
+
+Localiza el platillo en el listado y haz clic en **Editar**. Puedes modificar cualquier campo, incluida la imagen. Si subes una imagen nueva, reemplaza la anterior. Haz clic en **Guardar** para confirmar los cambios.
+
+## Cómo activar o desactivar un platillo
+
+Cada platillo tiene un interruptor de **Disponible** en el listado. Desactívalo cuando un platillo se haya agotado o no esté disponible temporalmente. Los meseros no podrán agregarlo a ningún pedido mientras esté inactivo.
+
+<Tip>
+  Desactivar un platillo es preferible a eliminarlo si la indisponibilidad es temporal. Así conservas el historial de pedidos anteriores que lo incluían y puedes reactivarlo cuando vuelva a estar disponible.
+</Tip>
+
+## Filtrar y buscar platillos
+
+Desde el listado puedes filtrar los platillos por categoría o por estado (disponibles / no disponibles) para encontrar rápidamente lo que necesitas editar. Los filtros son visibles para todos los roles con acceso al menú.

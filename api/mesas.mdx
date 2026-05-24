@@ -1,0 +1,303 @@
+---
+title: 'API de mesas: crear, listar y cambiar estado en CUSCATLECO'
+description: 'Los 5 endpoints de mesas en CUSCATLECO: crear mesa individual o en lote (máx. 50), listar, eliminar y cambiar entre 5 estados posibles.'
+keywords: ['mesas', 'estado', 'gestionar_mesas', 'listar_mesas', 'restaurante']
+sidebarTitle: 'Mesas'
+icon: 'table-chairs'
+---
+
+El módulo de mesas permite administrar el inventario de mesas del restaurante y controlar su estado en tiempo real. Las operaciones de creación y eliminación requieren el permiso `gestionar_mesas`, mientras que la consulta del listado requiere `listar_mesas` y el cambio de estado requiere `actualizar_estado_mesa`. Todos los endpoints requieren una sesión activa.
+
+<Info>
+  Los estados de mesa registran trazabilidad: cada cambio almacena el ID del usuario que lo realizó y la fecha y hora de actualización.
+</Info>
+
+---
+
+## POST /api/mesas
+
+Crea una nueva mesa en el sistema. El número de mesa debe ser único.
+
+**Permiso requerido:** `gestionar_mesas`
+
+### Cuerpo de la solicitud
+
+<ParamField body="mesa_numero" type="integer" required>
+  Número identificador de la mesa. Debe ser único en el restaurante.
+</ParamField>
+
+<ParamField body="mesa_capacidad" type="integer" required>
+  Capacidad máxima de personas. Debe ser mayor que 0.
+</ParamField>
+
+<ParamField body="mesa_estado" type="string">
+  Estado inicial de la mesa. Si se omite, se asigna `Disponible` por defecto. Valores válidos: `Disponible`, `Ocupada`, `Reservada`, `Limpieza`, `Mantenimiento`.
+</ParamField>
+
+<ParamField body="mesa_ubicacion" type="string">
+  Descripción de la ubicación física de la mesa. Ejemplos: `Zona Interior`, `Terraza`, `Salón VIP`.
+</ParamField>
+
+### Respuesta exitosa — 201
+
+<ResponseField name="message" type="string">
+  Mensaje de confirmación: `"Mesa creada exitosamente"`.
+</ResponseField>
+
+<ResponseField name="id" type="integer">
+  ID asignado a la nueva mesa.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl -X POST http://localhost:3000/api/mesas \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "mesa_numero": 9,
+    "mesa_capacidad": 4,
+    "mesa_ubicacion": "Terraza",
+    "mesa_estado": "Disponible"
+  }'
+```
+
+```json Respuesta 201
+{
+  "message": "Mesa creada exitosamente",
+  "id": 9
+}
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `400`  | Faltan campos requeridos, capacidad inválida, o el número de mesa ya existe. |
+| `401`  | Sesión no activa. |
+| `403`  | Sin permiso `gestionar_mesas`. |
+
+---
+
+## POST /api/mesas/bulk
+
+Crea múltiples mesas en una sola solicitud. Todas las mesas se crean con estado `Disponible`. El límite máximo es de 50 mesas por solicitud.
+
+**Permiso requerido:** `gestionar_mesas`
+
+### Cuerpo de la solicitud
+
+<ParamField body="mesas" type="object[]" required>
+  Array de objetos de mesa. Máximo 50 elementos.
+
+  <Expandable title="propiedades de cada mesa">
+    <ParamField body="mesa_numero" type="integer" required>
+      Número de la mesa. Debe ser único en el request y en la base de datos.
+    </ParamField>
+
+    <ParamField body="mesa_capacidad" type="integer" required>
+      Capacidad máxima de personas. Debe ser mayor que 0.
+    </ParamField>
+
+    <ParamField body="mesa_ubicacion" type="string">
+      Descripción de la ubicación física.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Respuesta exitosa — 201
+
+<ResponseField name="message" type="string">
+  Mensaje con la cantidad de mesas creadas. Ejemplo: `"5 mesas creadas"`.
+</ResponseField>
+
+<ResponseField name="firstId" type="integer">
+  ID del primer registro insertado.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl -X POST http://localhost:3000/api/mesas/bulk \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "mesas": [
+      { "mesa_numero": 10, "mesa_capacidad": 4, "mesa_ubicacion": "Terraza" },
+      { "mesa_numero": 11, "mesa_capacidad": 6, "mesa_ubicacion": "Zona Interior" },
+      { "mesa_numero": 12, "mesa_capacidad": 2, "mesa_ubicacion": "Barra" }
+    ]
+  }'
+```
+
+```json Respuesta 201
+{
+  "message": "3 mesas creadas",
+  "firstId": 10
+}
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `400`  | El array está vacío, supera el límite de 50, contiene números duplicados, o alguna mesa ya existe. |
+| `401`  | Sesión no activa. |
+| `403`  | Sin permiso `gestionar_mesas`. |
+
+---
+
+## GET /api/mesas
+
+Devuelve el listado completo de mesas del restaurante ordenadas por número de mesa de forma descendente.
+
+**Permiso requerido:** `listar_mesas`
+
+### Respuesta exitosa — 200
+
+Retorna un array de objetos mesa.
+
+<ResponseField name="id_mesa" type="integer">
+  Identificador único de la mesa.
+</ResponseField>
+
+<ResponseField name="mesa_numero" type="integer">
+  Número visible de la mesa en el restaurante.
+</ResponseField>
+
+<ResponseField name="mesa_capacidad" type="integer">
+  Número máximo de personas.
+</ResponseField>
+
+<ResponseField name="mesa_ubicacion" type="string">
+  Zona o área del restaurante donde se encuentra.
+</ResponseField>
+
+<ResponseField name="mesa_estado" type="string">
+  Estado actual de la mesa. Valores posibles: `Disponible`, `Ocupada`, `Reservada`, `Limpieza`, `Mantenimiento`.
+</ResponseField>
+
+<ResponseField name="mesa_actualizada_por" type="string">
+  Nombre del último usuario que modificó la mesa. Puede ser `null` si nunca fue actualizada.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl http://localhost:3000/api/mesas \
+  -b cookies.txt
+```
+
+```json Respuesta 200
+[
+  {
+    "id_mesa": 8,
+    "mesa_numero": 8,
+    "mesa_capacidad": 8,
+    "mesa_ubicacion": "Salón VIP",
+    "mesa_estado": "Disponible",
+    "mesa_actualizada_por": null
+  },
+  {
+    "id_mesa": 3,
+    "mesa_numero": 3,
+    "mesa_capacidad": 6,
+    "mesa_ubicacion": "Terraza",
+    "mesa_estado": "Ocupada",
+    "mesa_actualizada_por": "Carlos Pérez"
+  }
+]
+```
+
+---
+
+## DELETE /api/mesas/:id
+
+Elimina permanentemente una mesa del sistema. Esta operación no se puede deshacer.
+
+**Permiso requerido:** `gestionar_mesas`
+
+### Parámetros de ruta
+
+<ParamField path="id" type="integer" required>
+  ID de la mesa a eliminar.
+</ParamField>
+
+### Respuesta exitosa — 200
+
+<ResponseField name="message" type="string">
+  Mensaje de confirmación: `"Mesa eliminada exitosamente"`.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl -X DELETE http://localhost:3000/api/mesas/9 \
+  -b cookies.txt
+```
+
+```json Respuesta 200
+{
+  "message": "Mesa eliminada exitosamente"
+}
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `401`  | Sesión no activa. |
+| `403`  | Sin permiso `gestionar_mesas`. |
+| `404`  | No existe una mesa con el ID indicado. |
+
+---
+
+## PATCH /api/mesas/:id/estado
+
+Actualiza el estado de una mesa específica. Los cambios quedan registrados en auditoría con el usuario que los realizó.
+
+**Permiso requerido:** `actualizar_estado_mesa`
+
+### Parámetros de ruta
+
+<ParamField path="id" type="integer" required>
+  ID de la mesa cuyo estado se desea cambiar.
+</ParamField>
+
+### Cuerpo de la solicitud
+
+<ParamField body="mesa_estado" type="string" required>
+  Nuevo estado de la mesa. Valores válidos: `Disponible`, `Ocupada`, `Reservada`, `Limpieza`, `Mantenimiento`.
+</ParamField>
+
+### Respuesta exitosa — 200
+
+<ResponseField name="message" type="string">
+  Mensaje de confirmación: `"Estado actualizado correctamente"`.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl -X PATCH http://localhost:3000/api/mesas/3/estado \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "mesa_estado": "Limpieza"
+  }'
+```
+
+```json Respuesta 200
+{
+  "message": "Estado actualizado correctamente"
+}
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `400`  | El campo `mesa_estado` está ausente o el valor no es válido. |
+| `401`  | Sesión no activa. |
+| `403`  | Sin permiso `actualizar_estado_mesa`. |
+| `404`  | No existe una mesa con el ID indicado. |

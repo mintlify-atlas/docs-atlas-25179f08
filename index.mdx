@@ -1,133 +1,61 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
-icon: 'star'
+title: "CUSCATLECO: Sistema POS para Restaurante Sabor Cuscatleco"
+description: "CUSCATLECO es un sistema POS completo para restaurantes con gestión de pedidos, roles diferenciados por área y facturación electrónica integrada."
 ---
 
-## Setting up
+CUSCATLECO es el sistema de punto de venta (POS) del Restaurante Sabor Cuscatleco. Centraliza la gestión de mesas, pedidos, menú y facturación en una sola plataforma web, con paneles dedicados para cada rol operativo: Administrador, Mesero, Cajero y Cocina.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Comenzar" icon="rocket" href="/instalacion">
+    Instala y configura CUSCATLECO en tu entorno local en minutos.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Roles y acceso" icon="users" href="/roles/descripcion-roles">
+    Conoce los cuatro roles del sistema y qué puede hacer cada uno.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Gestión de pedidos" icon="receipt" href="/funcionalidades/gestion-pedidos">
+    Flujo completo desde la toma del pedido hasta la entrega en mesa.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Referencia API" icon="code" href="/api/autenticacion">
+    Explora todos los endpoints REST disponibles en el sistema.
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## ¿Qué incluye CUSCATLECO?
 
-Everything you need to create world-class documentation.
+CUSCATLECO cubre el ciclo operativo completo de un restaurante, desde la gestión del salón hasta la emisión de facturas electrónicas.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+<CardGroup cols={2}>
+  <Card title="Mesas" icon="table" href="/funcionalidades/gestion-mesas">
+    Crea, visualiza y cambia el estado de cada mesa en tiempo real.
   </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
+  <Card title="Menú y platillos" icon="utensils" href="/funcionalidades/menu-platillos">
+    Administra categorías, precios, imágenes y disponibilidad del menú.
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
+  <Card title="Facturación electrónica" icon="file-invoice" href="/funcionalidades/facturacion">
+    Emite facturas de Consumidor Final y Crédito Fiscal con IVA calculado.
   </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
+  <Card title="Empleados" icon="id-badge" href="/funcionalidades/gestion-empleados">
+    Registra empleados, asigna roles y controla el acceso al sistema.
   </Card>
-</Columns>
+</CardGroup>
 
-## Make your content agent ready
+## Primeros pasos
 
-Make your docs work for humans and AI agents alike.
+<Steps>
+  <Step title="Instala el sistema">
+    Clona el repositorio, crea la base de datos MySQL con `schema.sql` e instala las dependencias con `npm install`.
+  </Step>
+  <Step title="Inicia el servidor">
+    Ejecuta `npm start` y abre `http://localhost:3000` en tu navegador.
+  </Step>
+  <Step title="Inicia sesión como Administrador">
+    Usa las credenciales iniciales `admin@saborcuscatleco.com` / `123` para acceder al panel de administración.
+  </Step>
+  <Step title="Configura el restaurante">
+    Crea los empleados, asigna sus roles y verifica que las mesas estén disponibles para comenzar a operar.
+  </Step>
+</Steps>
 
-<Columns cols={2}>
-  <Card
-    title="Prompt component"
-    icon="robot"
-    href="/agent-ready/prompt"
-  >
-    Embed shareable AI prompts readers can copy or open in Cursor.
-  </Card>
-  <Card
-    title="Visibility"
-    icon="eye"
-    href="/agent-ready/visibility"
-  >
-    Show different content to humans and agents reading your docs.
-  </Card>
-  <Card
-    title="Contextual menu"
-    icon="bolt"
-    href="/agent-ready/contextual"
-  >
-    Give readers one-click access to Claude, ChatGPT, Cursor, and more.
-  </Card>
-  <Card
-    title="AI coding tools"
-    icon="wand-magic-sparkles"
-    href="/ai-tools/claude-code"
-  >
-    Set up Claude Code, Cursor, or Windsurf with Mintlify's skill.
-  </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<Note>
+  El usuario administrador inicial viene preconfigurado en `schema.sql`. Cambia la contraseña después del primer inicio de sesión.
+</Note>

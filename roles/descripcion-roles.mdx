@@ -1,0 +1,84 @@
+---
+title: "Roles y permisos de acceso al sistema POS CUSCATLECO"
+description: "Los cuatro roles de CUSCATLECO (Administrador, Mesero, Cajero, Cocina) y su matriz de permisos por módulo, con explicación del modelo de acceso."
+---
+
+El sistema CUSCATLECO utiliza un modelo de control de acceso basado en permisos. Cada usuario tiene asignado un rol que agrupa un conjunto específico de permisos; es ese conjunto de permisos —no el nombre del rol en sí— lo que determina a qué pantallas y acciones puede acceder cada persona. Existen cuatro roles operativos: **Administrador**, **Mesero**, **Cajero** y **Cocina**.
+
+## Roles disponibles
+
+<CardGroup cols={2}>
+  <Card title="Administrador" icon="shield-halved" href="/roles/administrador">
+    Acceso total al sistema. Gestiona usuarios, menú, mesas, reportes y registros de auditoría.
+  </Card>
+  <Card title="Mesero" icon="utensils" href="/roles/mesero">
+    Toma de pedidos por mesa, gestión de reservaciones y actualización del estado de mesas.
+  </Card>
+  <Card title="Cajero" icon="cash-register" href="/roles/cajero">
+    Cierre de pedidos y emisión de facturas electrónicas (Consumidor Final y Crédito Fiscal).
+  </Card>
+  <Card title="Cocina" icon="fire-burner" href="/roles/cocina">
+    Visualización de pedidos entrantes y actualización del estado de preparación.
+  </Card>
+</CardGroup>
+
+## Permisos por módulo
+
+La siguiente tabla muestra qué permisos posee cada rol en cada módulo del sistema.
+
+| Permiso | Módulo | Administrador | Mesero | Cajero | Cocina |
+|---|---|:---:|:---:|:---:|:---:|
+| `ver_dashboard` | General | ✓ | ✓ | ✓ | ✓ |
+| `gestionar_usuarios` | Usuarios | ✓ | — | — | — |
+| `gestionar_roles` | Usuarios | ✓ | — | — | — |
+| `ver_menu` | Menú | ✓ | ✓ | ✓ | — |
+| `gestionar_menu` | Menú | ✓ | — | — | — |
+| `crear_pedido` | Pedidos | ✓ | ✓ | — | — |
+| `ver_pedidos` | Pedidos | ✓ | ✓ | ✓ | ✓ |
+| `actualizar_estado_pedido` | Pedidos | ✓ | — | — | ✓ |
+| `generar_factura` | Facturación | ✓ | — | ✓ | — |
+| `ver_reportes` | Reportes | ✓ | — | — | — |
+| `gestionar_reservaciones` | Reservaciones | ✓ | ✓ | — | — |
+| `gestionar_clientes` | Clientes | ✓ | — | ✓ | — |
+| `gestionar_mesas` | Mesas | ✓ | — | — | — |
+| `actualizar_estado_mesa` | Mesas | — | ✓ | — | — |
+| `listar_mesas` | Mesas | ✓ | ✓ | — | — |
+| `ver_auditoria` | Registros | ✓ | — | — | — |
+
+## Cómo funciona el sistema de permisos
+
+El acceso en CUSCATLECO se valida permiso a permiso, no por nombre de rol. Cuando un usuario intenta navegar a una ruta protegida o invocar un endpoint de la API, el middleware `requirePermission` comprueba si el arreglo de permisos cargado en la sesión incluye el permiso requerido para esa acción específica.
+
+```js
+// Ejemplo: protección de la ruta /admin
+app.get("/admin", requirePermission("ver_admin"), (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/views/administrador.html"));
+});
+```
+
+Si el usuario no está autenticado, el sistema lo redirige al login (`/`). Si está autenticado pero le falta el permiso, recibe la página de acceso denegado (`/403`). Las peticiones a la API devuelven `401` o `403` en JSON según corresponda.
+
+<Note>
+  Los permisos de cada usuario se almacenan en la sesión al momento del inicio de sesión. Si un administrador modifica los roles o permisos de un usuario, los cambios toman efecto en la próxima sesión de ese usuario.
+</Note>
+
+## Sesiones y expiración
+
+El sistema emplea sesiones del lado del servidor con una duración de **30 minutos**. La cookie de sesión se renueva automáticamente con cada solicitud activa (`rolling: true`), por lo que el temporizador se reinicia mientras el usuario esté interactuando con la aplicación.
+
+```js
+cookie: { maxAge: 1000 * 60 * 30 } // 30 minutos
+```
+
+Una vez que la sesión expira, el usuario es redirigido automáticamente a la pantalla de inicio de sesión. No existe cierre de sesión silencioso: el sistema destruye la sesión explícitamente al llamar a `/logout`.
+
+<Info>
+  Un mismo usuario puede tener asignados múltiples roles simultáneamente. Sus permisos serán la unión de todos los permisos de los roles que tenga activos.
+</Info>
+
+## Páginas de referencia por rol
+
+- [Administrador](/roles/administrador) — acceso completo al sistema
+- [Mesero](/roles/mesero) — gestión de mesas y pedidos en sala
+- [Cajero](/roles/cajero) — facturación y cierre de pedidos
+- [Cocina](/roles/cocina) — preparación y actualización de pedidos

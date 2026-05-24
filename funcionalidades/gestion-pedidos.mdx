@@ -1,0 +1,140 @@
+---
+title: "Ciclo completo de pedidos: salón, cocina y facturación"
+description: "Flujo de pedidos en CUSCATLECO: estados Pendiente a Cerrado, tipos Salon y Llevar, quién hace qué por rol y cómo cancelar un pedido."
+keywords: ["pedidos", "ciclo de pedido", "para llevar", "salón", "cocina", "cancelación"]
+---
+
+Los pedidos son el núcleo operativo de CUSCATLECO. Cada pedido registra la mesa o el tipo de servicio, los platillos solicitados, las observaciones del cliente y el estado de preparación. El sistema guía a cada área —mesero, cocina y cajero— a través de un flujo de estados que va desde la toma de orden hasta el cierre y la facturación.
+
+## Ciclo de vida de un pedido
+
+Un pedido pasa por los siguientes estados en orden. En cualquier momento antes de llegar a **Entregado**, un usuario autorizado puede cancelarlo.
+
+```
+Pendiente → EnPreparacion → Listo → Entregado → Cerrado
+                                                    ↑
+                                              (facturado)
+
+En cualquier estado anterior: → Cancelado
+```
+
+<CardGroup cols={2}>
+  <Card title="Pendiente" icon="clock">
+    El pedido fue creado y enviado a cocina, pero la preparación aún no ha comenzado.
+  </Card>
+  <Card title="En preparación" icon="fire-burner">
+    La cocina confirmó el pedido y está preparando los platillos.
+  </Card>
+  <Card title="Listo" icon="bell">
+    Los platillos están listos para ser llevados a la mesa o entregados al cliente.
+  </Card>
+  <Card title="Entregado" icon="check">
+    El mesero entregó el pedido al cliente. Se espera el cierre por parte del cajero.
+  </Card>
+  <Card title="Cerrado" icon="receipt">
+    El cajero emitió la factura. El pedido queda cerrado y la mesa vuelve a estar disponible.
+  </Card>
+  <Card title="Cancelado" icon="ban">
+    El pedido fue anulado antes de su entrega. Se registra el motivo y quién lo canceló.
+  </Card>
+</CardGroup>
+
+## Tipos de pedido
+
+<Tabs>
+  <Tab title="Salón (con mesa)">
+    Un pedido de **Salón** se asocia a una mesa específica del restaurante. Al iniciarlo, la mesa pasa automáticamente al estado **Ocupada** para que no se le asigne otro pedido mientras esté en curso.
+
+    **Datos requeridos al crear el pedido:**
+    - Mesa asignada
+    - Mesero responsable
+    - Platillos con cantidad y notas opcionales por ítem
+    - Observaciones generales (opcional)
+    - Cliente registrado (opcional, para aplicar descuentos por rango)
+
+    Cuando el cajero cierra el pedido, la mesa regresa al estado **Disponible** automáticamente.
+  </Tab>
+  <Tab title="Para llevar (sin mesa)">
+    Un pedido **Para llevar** no requiere mesa. Es útil para ventas directas en mostrador o pedidos para retirar.
+
+    **Datos requeridos al crear el pedido:**
+    - Mesero o cajero responsable
+    - Platillos con cantidad y notas opcionales por ítem
+    - Observaciones generales (opcional)
+    - Cliente registrado (opcional)
+
+    No hay mesa involucrada, por lo que no se bloquea ningún espacio del salón.
+  </Tab>
+</Tabs>
+
+## Campos de un pedido
+
+| Campo | Descripción |
+|---|---|
+| **Mesa** | Mesa asignada (solo pedidos de Salón). |
+| **Mesero** | Usuario que creó el pedido. |
+| **Cliente** | Cliente registrado vinculado al pedido (opcional). |
+| **Estado** | Estado actual dentro del ciclo de vida. |
+| **Tipo** | `Salon` o `Llevar`. |
+| **Observaciones** | Notas generales sobre el pedido (alergias, preferencias, etc.). |
+| **Total** | Suma de los subtotales de todos los platillos del pedido. |
+
+### Detalle de ítems
+
+Cada platillo dentro de un pedido registra:
+
+| Campo | Descripción |
+|---|---|
+| **Platillo** | Nombre y referencia al platillo del menú. |
+| **Cantidad** | Número de unidades solicitadas. |
+| **Precio unitario** | Precio del platillo al momento del pedido. |
+| **Subtotal** | Cantidad × precio unitario. |
+| **Notas** | Instrucciones específicas para ese ítem (ej. "sin cebolla"). |
+
+## Quién hace qué
+
+| Acción | Mesero | Cocina | Cajero | Administrador |
+|---|:---:|:---:|:---:|:---:|
+| Iniciar pedido (reservar mesa) | ✓ | — | — | ✓ |
+| Crear pedido con platillos | ✓ | — | — | ✓ |
+| Cambiar estado a En preparación | — | ✓ | — | ✓ |
+| Cambiar estado a Listo | — | ✓ | — | ✓ |
+| Cambiar estado a Entregado | — | — | — | ✓ |
+| Cerrar pedido (facturar) | — | — | ✓ | ✓ |
+| Cancelar pedido | — | — | — | ✓ |
+
+## Flujo completo desde el mesero
+
+<Steps>
+  <Step title="Inicia el pedido">
+    En tu panel de mesero, selecciona la mesa donde se sentaron los clientes y haz clic en **Iniciar pedido**. El sistema marca la mesa como **Ocupada** de inmediato para que nadie más la asigne.
+  </Step>
+  <Step title="Agrega los platillos">
+    Busca cada platillo en el menú y agrégalo al pedido. Puedes ajustar la cantidad e incluir notas por ítem (ej. "término medio", "sin picante"). El total se calcula automáticamente.
+  </Step>
+  <Step title="Confirma y envía a cocina">
+    Revisa el resumen del pedido, agrega cualquier observación general y haz clic en **Crear pedido**. El pedido aparecerá en la pantalla de la cocina con estado **Pendiente**.
+  </Step>
+  <Step title="Cocina actualiza el estado">
+    El personal de cocina cambia el estado a **En preparación** cuando comienza a trabajar en el pedido, y a **Listo** cuando los platillos están listos para servir.
+  </Step>
+  <Step title="Entrega en mesa">
+    Cuando veas la notificación de pedido listo, lleva los platillos a la mesa. El Administrador puede actualizar el estado a **Entregado** desde su panel.
+  </Step>
+  <Step title="Cajero cierra y factura">
+    El cajero selecciona el pedido entregado, elige el tipo de factura y emite el comprobante. El pedido pasa a **Cerrado** y la mesa queda **Disponible** nuevamente.
+  </Step>
+</Steps>
+
+## Cancelación de un pedido
+
+Para cancelar un pedido, selecciónalo en el listado y usa la opción **Cancelar pedido**. El sistema requiere que ingreses un **motivo** de cancelación antes de confirmar.
+
+Al cancelar, el sistema registra:
+- El motivo ingresado
+- El usuario que realizó la cancelación
+- La fecha y hora exacta de la cancelación
+
+<Warning>
+  Cancelar un pedido de salón libera la mesa automáticamente. Si el pedido ya tiene una factura emitida, no puede cancelarse desde este módulo — deberás anular la factura primero desde el módulo de Facturación.
+</Warning>

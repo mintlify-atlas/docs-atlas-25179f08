@@ -1,0 +1,140 @@
+---
+title: "Panel del Administrador: acceso completo a CUSCATLECO"
+description: "El rol Administrador tiene 16 permisos en CUSCATLECO: gestiona empleados, menú, mesas, facturación, reportes y el registro de auditoría."
+---
+
+El rol **Administrador** es el nivel de acceso más alto del sistema CUSCATLECO. Un usuario con este rol puede operar cualquier módulo de la aplicación: desde configurar el menú y gestionar al personal hasta consultar los registros de auditoría y generar reportes de ventas. Por su naturaleza, debe asignarse únicamente a personal de confianza con responsabilidades de supervisión o administración del establecimiento.
+
+<Tip>
+  El Administrador es el único rol con acceso a la gestión de usuarios, la asignación de roles, los reportes y el registro de auditoría. Limite la cantidad de cuentas con este rol al mínimo necesario.
+</Tip>
+
+## Acceso al panel
+
+El Administrador accede a su panel exclusivo en la siguiente URL:
+
+```
+/admin
+```
+
+El servidor protege esta ruta con el permiso `ver_admin`. Cualquier intento de acceso sin ese permiso redirige al usuario a `/403`.
+
+## Permisos asignados
+
+El rol Administrador agrupa **16 permisos** que cubren la totalidad de los módulos del sistema.
+
+<AccordionGroup>
+  <Accordion title="General">
+    | Permiso | Descripción |
+    |---|---|
+    | `ver_dashboard` | Ver el panel principal con resumen de actividad |
+    | `ver_admin` | Acceder al panel de administración |
+  </Accordion>
+  <Accordion title="Usuarios y Roles">
+    | Permiso | Descripción |
+    |---|---|
+    | `gestionar_usuarios` | Crear, editar y desactivar cuentas de empleados |
+    | `gestionar_roles` | Asignar y modificar los roles de los usuarios |
+  </Accordion>
+  <Accordion title="Menú">
+    | Permiso | Descripción |
+    |---|---|
+    | `ver_menu` | Consultar el catálogo de platillos y categorías |
+    | `gestionar_menu` | Crear, editar y eliminar platillos del menú |
+  </Accordion>
+  <Accordion title="Pedidos">
+    | Permiso | Descripción |
+    |---|---|
+    | `crear_pedido` | Registrar nuevos pedidos desde cualquier mesa o para llevar |
+    | `ver_pedidos` | Ver el listado completo de pedidos y su historial |
+    | `actualizar_estado_pedido` | Cambiar el estado de un pedido manualmente |
+  </Accordion>
+  <Accordion title="Facturación">
+    | Permiso | Descripción |
+    |---|---|
+    | `generar_factura` | Emitir facturas electrónicas de tipo Consumidor Final o Crédito Fiscal |
+  </Accordion>
+  <Accordion title="Reportes">
+    | Permiso | Descripción |
+    |---|---|
+    | `ver_reportes` | Consultar reportes de ventas, pedidos y estadísticas del restaurante |
+  </Accordion>
+  <Accordion title="Reservaciones y Clientes">
+    | Permiso | Descripción |
+    |---|---|
+    | `gestionar_reservaciones` | Crear, confirmar y cancelar reservaciones |
+    | `gestionar_clientes` | Ver y administrar clientes registrados y sus rangos de fidelidad |
+  </Accordion>
+  <Accordion title="Mesas">
+    | Permiso | Descripción |
+    |---|---|
+    | `gestionar_mesas` | Crear y eliminar mesas del restaurante |
+    | `listar_mesas` | Ver el estado actual de todas las mesas |
+  </Accordion>
+  <Accordion title="Auditoría">
+    | Permiso | Descripción |
+    |---|---|
+    | `ver_auditoria` | Consultar el registro de auditoría con todas las acciones del sistema |
+  </Accordion>
+</AccordionGroup>
+
+## Capacidades principales
+
+### Gestión de usuarios y empleados
+
+El Administrador puede crear cuentas para nuevos empleados, asignarles uno o más roles, y desactivar cuentas cuando sea necesario. El acceso a las rutas de empleados en la API está protegido directamente por el permiso `gestionar_usuarios`:
+
+```js
+app.use("/api/empleados", requirePermission("gestionar_usuarios"), empleadosRoutes);
+```
+
+### Gestión del menú
+
+Puede agregar nuevas categorías y platillos, modificar precios, subir imágenes y marcar platillos como no disponibles temporalmente. Cada cambio en el menú queda registrado en `auditoria_log` con los datos anteriores y nuevos.
+
+### Gestión de mesas
+
+Tiene acceso completo a la configuración de mesas: puede crear nuevas mesas, definir su capacidad y ubicación (Zona Interior, Terraza, Barra, Salón VIP), y eliminarlas cuando dejen de estar en servicio. También puede ver el estado en tiempo real de todas las mesas.
+
+### Pedidos y facturación
+
+Puede crear pedidos, actualizar su estado en cualquier punto del flujo (`Pendiente` → `EnPreparacion` → `Listo` → `Entregado` → `Cerrado`) y generar facturas electrónicas tanto de tipo **Consumidor Final** como **Crédito Fiscal**.
+
+### Reportes
+
+Es el único rol con acceso al módulo de reportes, donde puede consultar estadísticas de ventas, pedidos por período, platillos más vendidos y desempeño general del restaurante.
+
+### Registro de auditoría
+
+El Administrador puede revisar el log completo de auditoría (`auditoria_log`), que registra cada acción relevante en el sistema: quién la realizó, en qué módulo, qué entidad fue afectada, y los valores anteriores y nuevos en formato JSON.
+
+## Flujo de trabajo típico
+
+<Steps>
+  <Step title="Iniciar sesión">
+    Ingresar con credenciales de Administrador en la pantalla de login. El sistema valida las credenciales, carga los permisos en la sesión y redirige a `/admin`.
+  </Step>
+  <Step title="Revisar el dashboard">
+    Al entrar al panel, el Administrador ve un resumen de la actividad reciente: pedidos activos, mesas ocupadas y notificaciones pendientes.
+  </Step>
+  <Step title="Gestionar usuarios">
+    Desde el módulo de empleados, puede crear o editar cuentas y asignar roles según las responsabilidades de cada persona.
+  </Step>
+  <Step title="Configurar el menú">
+    En el módulo de menú, agrega o actualiza platillos, ajusta precios y gestiona la disponibilidad del catálogo.
+  </Step>
+  <Step title="Supervisar operaciones">
+    Monitorea pedidos en curso, verifica el estado de las mesas y atiende cualquier incidencia operativa.
+  </Step>
+  <Step title="Revisar reportes y auditoría">
+    Al cierre del turno o del día, consulta los reportes de ventas y revisa el log de auditoría para verificar que todo haya operado correctamente.
+  </Step>
+</Steps>
+
+<Warning>
+  Nunca comparta las credenciales de la cuenta Administrador. Si necesita dar acceso administrativo a otra persona, cree una nueva cuenta con el rol correspondiente.
+</Warning>
+
+---
+
+Volver a [Roles y Acceso](/roles/descripcion-roles)

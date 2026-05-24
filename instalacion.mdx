@@ -1,0 +1,119 @@
+---
+title: "Cómo instalar y poner en marcha CUSCATLECO localmente"
+description: "Guía paso a paso para instalar CUSCATLECO: clona el repositorio, crea la base de datos con schema.sql, instala dependencias e inicia el servidor."
+---
+
+Esta guía te lleva desde cero hasta tener CUSCATLECO funcionando en tu máquina. Sigue los pasos en orden: primero verifica los requisitos, luego clona el repositorio, configura la base de datos e inicia el servidor.
+
+## Requisitos previos
+
+Antes de comenzar, asegúrate de tener instalado lo siguiente en tu sistema:
+
+- **Node.js** — Versión LTS recomendada. Descárgalo desde [nodejs.org](https://nodejs.org).
+- **Git** — Para clonar el repositorio. Descárgalo desde [git-scm.com](https://git-scm.com).
+- **MySQL** — Servidor de base de datos relacional. Versión 8.x o superior recomendada.
+
+<Tip>
+  Puedes verificar que cada herramienta está instalada ejecutando `node -v`, `git --version` y `mysql --version` en tu terminal.
+</Tip>
+
+## Instalación
+
+<Steps>
+  <Step title="Clona el repositorio">
+    Abre una terminal, navega a la carpeta donde quieres instalar el proyecto y ejecuta:
+
+    ```bash
+    git clone https://github.com/AbyssDevs/CUSCATLECO.git
+    ```
+
+    Esto descarga el código fuente completo en una carpeta llamada `CUSCATLECO`.
+  </Step>
+
+  <Step title="Instala las dependencias">
+    Entra a la raíz del proyecto e instala los paquetes de Node.js:
+
+    ```bash
+    cd CUSCATLECO
+    npm install
+    ```
+
+    npm instalará Express, mysql2, bcrypt, express-session, multer y el resto de dependencias definidas en `package.json`.
+  </Step>
+
+  <Step title="Configura la base de datos">
+    Abre el cliente de MySQL como usuario con privilegios suficientes y ejecuta los siguientes comandos para crear la base de datos e importar el esquema:
+
+    ```sql
+    CREATE DATABASE IF NOT EXISTS cuscatleco;
+    USE cuscatleco;
+    ```
+
+    Luego importa el archivo `schema.sql` incluido en la raíz del proyecto:
+
+    ```bash
+    mysql -u root -p cuscatleco < schema.sql
+    ```
+
+    El archivo `schema.sql` crea todas las tablas necesarias (roles, permisos, usuarios, mesas, platillos, pedidos, facturas) y registra el usuario administrador inicial.
+  </Step>
+
+  <Step title="Inicia el servidor">
+    Desde la raíz del proyecto, ejecuta:
+
+    ```bash
+    npm start
+    ```
+
+    El servidor arranca en el puerto `3000`. Deberías ver en la terminal:
+
+    ```
+    Servidor corriendo en http://localhost:3000
+    Abre esa URL en tu navegador para ver el login
+    ```
+  </Step>
+
+  <Step title="Abre la aplicación en el navegador">
+    Navega a la siguiente dirección en tu navegador:
+
+    ```
+    http://localhost:3000
+    ```
+
+    Verás la pantalla de inicio de sesión de CUSCATLECO.
+  </Step>
+</Steps>
+
+## Credenciales iniciales
+
+El esquema de base de datos incluye un usuario administrador preconfigurado para el primer acceso:
+
+| Campo | Valor |
+|---|---|
+| **Correo** | `admin@saborcuscatleco.com` |
+| **Contraseña** | `123` |
+
+<Warning>
+  Cambia la contraseña del administrador inmediatamente después del primer inicio de sesión. La contraseña predeterminada `123` es pública y representa un riesgo de seguridad en cualquier entorno que no sea estrictamente local.
+</Warning>
+
+## Duración de la sesión
+
+Las sesiones de usuario tienen una duración máxima de **30 minutos** de inactividad. Transcurrido ese tiempo, el sistema cierra la sesión automáticamente y redirige al usuario a la pantalla de inicio de sesión. El temporizador se reinicia con cada petición al servidor, por lo que la sesión se mantiene activa mientras el usuario interactúa con la aplicación.
+
+<Note>
+  Para cerrar la sesión manualmente en cualquier momento, accede a la ruta `/logout`. El servidor destruye la sesión activa y redirige al login.
+</Note>
+
+## Próximos pasos
+
+Con el sistema instalado y en marcha, puedes explorar las funcionalidades disponibles según tu rol:
+
+<CardGroup cols={2}>
+  <Card title="Introducción" icon="book-open" href="/introduccion">
+    Revisa la descripción general del sistema, el stack tecnológico y los roles disponibles.
+  </Card>
+  <Card title="Roles y acceso" icon="shield-check" href="/roles/descripcion-roles">
+    Conoce en detalle qué puede hacer cada rol dentro de CUSCATLECO.
+  </Card>
+</CardGroup>

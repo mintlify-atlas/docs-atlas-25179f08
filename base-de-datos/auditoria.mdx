@@ -1,0 +1,151 @@
+---
+title: "Auditoría de cambios con auditoria_log en CUSCATLECO"
+description: "La tabla auditoria_log registra cada mutación con snapshots JSON antes/después. Accesible solo para Administradores con permiso ver_auditoria."
+---
+
+El sistema CUSCATLECO implementa un mecanismo de auditoría centralizado que registra automáticamente toda acción de mutación realizada sobre las entidades críticas del negocio. Cada vez que un usuario autenticado crea, modifica o elimina un registro en los módulos principales, el middleware `auditoriaMiddleware` produce una entrada en la tabla `auditoria_log` con un snapshot completo del estado anterior y posterior al cambio. Esto permite rastrear quién hizo qué, cuándo y desde qué rol, sin depender de los registros de aplicación.
+
+## La tabla `auditoria_log`
+
+La tabla almacena un registro por cada evento auditado. Su estructura combina campos de identificación del actor, contexto de la acción y datos JSON que preservan el estado completo del registro afectado.
+
+```sql
+CREATE TABLE auditoria_log (
+    id_auditoria    INT PRIMARY KEY AUTO_INCREMENT,
+    id_usuario      INT NOT NULL,
+    usuario_nombre  VARCHAR(100) NOT NULL,
+    usuario_rol     VARCHAR(50)  NOT NULL,
+    accion          VARCHAR(50)  NOT NULL,
+    modulo          VARCHAR(50)  NOT NULL,
+    entidad_id      INT NULL,
+    descripcion     TEXT,
+    datos_anteriores JSON NULL,
+    datos_nuevos     JSON NULL,
+    fecha_hora      DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios (id_usuario)
+);
+```
+
+### Descripción de cada campo
+
+<CardGroup cols={2}>
+  <Card title="Identificación del actor" icon="user-shield">
+    - **`id_usuario`** — FK a `usuarios`. Identifica al usuario autenticado responsable de la acción.
+    - **`usuario_nombre`** — Nombre del usuario copiado en el momento del evento. Garantiza legibilidad incluso si el nombre cambia después.
+    - **`usuario_rol`** — Rol activo del usuario al momento del evento, capturado como texto para preservar el contexto histórico.
+  </Card>
+  <Card title="Contexto de la acción" icon="tag">
+    - **`accion`** — Verbo que describe la operación: `CREAR`, `EDITAR` o `ELIMINAR`.
+    - **`modulo`** — Módulo del sistema afectado: `mesas`, `platillos` o `pedidos`.
+    - **`entidad_id`** — ID del registro específico que fue modificado dentro del módulo.
+    - **`descripcion`** — Texto legible generado por el middleware que resume el evento.
+  </Card>
+  <Card title="Snapshots JSON" icon="code">
+    - **`datos_anteriores`** — Objeto JSON con todos los valores del registro **antes** del cambio. Es `NULL` en creaciones.
+    - **`datos_nuevos`** — Objeto JSON con todos los valores del registro **después** del cambio. Es `NULL` en eliminaciones.
+  </Card>
+  <Card title="Temporalidad" icon="clock">
+    - **`fecha_hora`** — Timestamp exacto del evento con precisión de segundos, generado automáticamente por MySQL al insertar.
+  </Card>
+</CardGroup>
+
+## Acciones que se registran
+
+El middleware `auditoriaMiddleware` intercepta las rutas de mutación de los módulos principales. Las operaciones auditadas son:
+
+| Módulo | Acción | Cuándo se dispara |
+|---|---|---|
+| `mesas` | `CREAR` | Al registrar una nueva mesa |
+| `mesas` | `EDITAR` | Al cambiar estado, capacidad o ubicación de una mesa |
+| `mesas` | `ELIMINAR` | Al eliminar una mesa del sistema |
+| `platillos` | `CREAR` | Al agregar un nuevo platillo al menú |
+| `platillos` | `EDITAR` | Al modificar precio, disponibilidad u otros datos del platillo |
+| `platillos` | `ELIMINAR` | Al eliminar un platillo |
+| `pedidos` | `CREAR` | Al registrar un nuevo pedido |
+| `pedidos` | `EDITAR` | Al cambiar el estado de un pedido |
+| `pedidos` | `ELIMINAR` | Al cancelar o eliminar un pedido |
+
+<Note>
+  El middleware requiere que exista un usuario autenticado en la sesión antes de generar el registro de auditoría. Las operaciones realizadas directamente sobre la base de datos (por ejemplo, mediante un cliente SQL) no quedan reflejadas en `auditoria_log`.
+</Note>
+
+## Control de acceso
+
+Solo los usuarios con el permiso `ver_auditoria` (módulo `Registros`) pueden consultar el historial de auditoría desde la interfaz del sistema. En la configuración de seed inicial, este permiso está asignado exclusivamente al rol **Administrador** (id_permiso = 20, id_rol = 1).
+
+```sql
+-- Permiso de auditoría asignado solo al Administrador
+INSERT INTO rol_permiso (id_rol, id_permiso) VALUES (1, 20);
+```
+
+<Warning>
+  No asignes el permiso `ver_auditoria` a roles operativos como Mesero o Cajero. El historial de auditoría contiene datos sensibles de todas las operaciones del sistema, incluyendo snapshots completos de pedidos y configuración de mesas.
+</Warning>
+
+## Snapshots JSON: datos_anteriores y datos_nuevos
+
+Los campos `datos_anteriores` y `datos_nuevos` almacenan una copia fiel del estado del registro afectado en el momento del evento, serializada como JSON. Esto permite reconstruir exactamente qué valores existían antes y después de cualquier modificación, sin necesidad de consultar tablas históricas adicionales.
+
+- En una operación **CREAR**: `datos_anteriores` es `NULL`; `datos_nuevos` contiene el registro tal como quedó guardado.
+- En una operación **EDITAR**: ambos campos están presentes y reflejan el estado previo y el posterior.
+- En una operación **ELIMINAR**: `datos_anteriores` contiene el registro que existía; `datos_nuevos` es `NULL`.
+
+### Ejemplo de entrada en auditoria_log
+
+El siguiente JSON representa un registro real de auditoría generado al cambiar el estado de la mesa 3 de `Disponible` a `Ocupada`:
+
+```json
+{
+  "id_auditoria": 142,
+  "id_usuario": 5,
+  "usuario_nombre": "Carlos Méndez",
+  "usuario_rol": "Mesero",
+  "accion": "EDITAR",
+  "modulo": "mesas",
+  "entidad_id": 3,
+  "descripcion": "Mesa #3 actualizada: estado cambiado de Disponible a Ocupada",
+  "datos_anteriores": {
+    "id_mesa": 3,
+    "mesa_numero": 3,
+    "mesa_capacidad": 6,
+    "mesa_ubicacion": "Terraza",
+    "mesa_estado": "Disponible",
+    "mesa_actualizada_por": null,
+    "mesa_actualizada_en": "2026-05-24T10:15:00"
+  },
+  "datos_nuevos": {
+    "id_mesa": 3,
+    "mesa_numero": 3,
+    "mesa_capacidad": 6,
+    "mesa_ubicacion": "Terraza",
+    "mesa_estado": "Ocupada",
+    "mesa_actualizada_por": 5,
+    "mesa_actualizada_en": "2026-05-24T11:42:37"
+  },
+  "fecha_hora": "2026-05-24T11:42:37"
+}
+```
+
+## Índices de rendimiento
+
+La tabla `auditoria_log` puede crecer rápidamente en un restaurante con operaciones intensas. El esquema define cinco índices para garantizar que las consultas del panel de administración respondan con eficiencia incluso con cientos de miles de registros:
+
+| Índice | Columnas indexadas | Caso de uso optimizado |
+|---|---|---|
+| `idx_auditoria_usuario` | `id_usuario` | Filtrar acciones de un usuario específico |
+| `idx_auditoria_accion` | `accion` | Listar todas las eliminaciones o todas las creaciones |
+| `idx_auditoria_modulo` | `modulo` | Ver historial completo de un módulo (ej. todos los cambios en `pedidos`) |
+| `idx_auditoria_fecha` | `fecha_hora` | Consultas por rango de fechas para reportes periódicos |
+| `idx_auditoria_entidad` | `modulo`, `entidad_id` | Obtener el historial completo de un registro específico (ej. todos los eventos del pedido #88) |
+
+```sql
+CREATE INDEX idx_auditoria_usuario ON auditoria_log (id_usuario);
+CREATE INDEX idx_auditoria_accion  ON auditoria_log (accion);
+CREATE INDEX idx_auditoria_modulo  ON auditoria_log (modulo);
+CREATE INDEX idx_auditoria_fecha   ON auditoria_log (fecha_hora);
+CREATE INDEX idx_auditoria_entidad ON auditoria_log (modulo, entidad_id);
+```
+
+<Tip>
+  Para auditorías forenses de una entidad particular — por ejemplo, reconstruir el historial completo de cambios del pedido #88 — el índice compuesto `idx_auditoria_entidad` es el más eficiente porque filtra simultáneamente por módulo y por ID de entidad sin necesidad de escanear la tabla completa.
+</Tip>

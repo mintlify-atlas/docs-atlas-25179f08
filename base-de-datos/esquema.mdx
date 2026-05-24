@@ -1,0 +1,328 @@
+---
+title: "Esquema MySQL de CUSCATLECO: tablas y datos iniciales"
+description: "Referencia del esquema de 15 tablas MySQL de CUSCATLECO por área funcional: roles, pedidos, facturas y auditoría, con datos semilla incluidos."
+---
+
+La base de datos `cuscatleco` está construida sobre MySQL y organiza toda la lógica del sistema de punto de venta en ocho áreas funcionales. Cada área agrupa las tablas que comparten responsabilidad sobre un dominio específico del negocio, desde la gestión de accesos hasta la trazabilidad de auditoría. Este documento describe la estructura real del esquema tal como aparece en `schema.sql`, junto con los datos semilla que se cargan en la instalación inicial.
+
+## Instalación
+
+Para crear la base de datos e importar el esquema completo desde cero, ejecuta los siguientes comandos en tu cliente MySQL:
+
+```sql
+CREATE DATABASE cuscatleco;
+USE cuscatleco;
+SOURCE schema.sql;
+```
+
+Esto crea todas las tablas, índices, claves foráneas y carga los datos iniciales (roles, permisos, usuario administrador, categorías de menú y mesas) en un solo paso.
+
+<Note>
+  El hash de contraseña del usuario administrador inicial corresponde a la cadena `123` cifrada con bcrypt (costo 10). Cambia esta contraseña inmediatamente después de la primera instalación en cualquier entorno de producción.
+</Note>
+
+## Áreas funcionales
+
+<AccordionGroup>
+
+  <Accordion title="Roles y permisos" icon="shield-halved">
+    Este grupo controla qué puede hacer cada usuario dentro del sistema. Los permisos son granulares por módulo y se asignan a roles, no directamente a usuarios.
+
+    **Tabla `roles`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_rol` | INT PK | Identificador único del rol |
+    | `rol_nombre` | VARCHAR(50) UNIQUE | Nombre del rol (ej. `Administrador`) |
+    | `rol_descripcion` | VARCHAR(200) | Descripción del alcance del rol |
+    | `rol_activo` | BOOLEAN | Indica si el rol está habilitado |
+    | `rol_creado_en` | DATETIME | Fecha de creación |
+
+    **Tabla `permisos`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_permiso` | INT PK | Identificador único del permiso |
+    | `permiso_nombre` | VARCHAR(100) UNIQUE | Clave del permiso (ej. `ver_auditoria`) |
+    | `permiso_modulo` | VARCHAR(50) | Módulo al que pertenece el permiso |
+    | `permiso_descripcion` | VARCHAR(200) | Descripción legible del permiso |
+
+    **Tabla `rol_permiso`**
+
+    Tabla pivote de muchos-a-muchos. La clave primaria compuesta `(id_rol, id_permiso)` garantiza que no se dupliquen asignaciones. Ambas claves foráneas tienen `ON DELETE CASCADE`.
+
+    **Datos semilla — roles del sistema:**
+
+    | id_rol | rol_nombre | Descripción |
+    |---|---|---|
+    | 1 | Administrador | Acceso total al sistema |
+    | 2 | Mesero | Gestión de pedidos por mesa |
+    | 3 | Cajero | Control de pagos y facturación |
+    | 4 | Cocina | Visualización y gestión de pedidos en cocina |
+    | 5 | Cliente | Acceso al portal de clientes |
+
+    **Datos semilla — permisos del sistema:**
+
+    | permiso_nombre | permiso_modulo |
+    |---|---|
+    | `ver_dashboard` | General |
+    | `gestionar_usuarios` | Usuarios |
+    | `gestionar_roles` | Usuarios |
+    | `ver_menu` | Menu |
+    | `gestionar_menu` | Menu |
+    | `crear_pedido` | Pedidos |
+    | `ver_pedidos` | Pedidos |
+    | `actualizar_estado_pedido` | Pedidos |
+    | `generar_factura` | Facturacion |
+    | `ver_reportes` | Reportes |
+    | `gestionar_reservaciones` | Reservaciones |
+    | `gestionar_clientes` | Clientes |
+    | `gestionar_mesas` | Mesas |
+    | `actualizar_estado_mesa` | Mesas |
+    | `listar_mesas` | Mesas |
+    | `ver_admin` | Administrador |
+    | `ver_mesero` | Mesero |
+    | `ver_cajero` | Cajero |
+    | `ver_cocina` | Cocina |
+    | `ver_auditoria` | Registros |
+  </Accordion>
+
+  <Accordion title="Usuarios y clientes" icon="users">
+    Gestiona las cuentas de acceso al sistema y el perfil de fidelización de los clientes del restaurante.
+
+    **Tabla `usuarios`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_usuario` | INT PK | Identificador único del usuario |
+    | `usuario_nombre` | VARCHAR(100) | Nombre completo |
+    | `usuario_email` | VARCHAR(100) UNIQUE | Correo electrónico (usado para login) |
+    | `usuario_password` | VARCHAR(255) | Hash bcrypt de la contraseña |
+    | `usuario_telefono` | VARCHAR(15) | Teléfono de contacto |
+    | `usuario_activo` | BOOLEAN | Estado de la cuenta |
+    | `usuario_creado_en` | DATETIME | Fecha de creación |
+    | `usuario_actualizado_en` | DATETIME | Última actualización (auto) |
+
+    **Tabla `usuario_rol`**
+
+    Tabla pivote que asigna uno o más roles a cada usuario. La columna `usuario_rol_fecha_asignacion` registra cuándo se otorgó el rol.
+
+    **Tabla `rangos_cliente`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_rango` | INT PK | Identificador del rango |
+    | `rango_cliente_nombre` | ENUM | `Bronce`, `Plata` u `Oro` |
+    | `rango_cliente_descuento` | DECIMAL(5,2) | Porcentaje de descuento aplicable |
+    | `rango_cliente_min_pedidos` | INT | Pedidos mínimos para alcanzar el rango |
+    | `rango_cliente_min_consumo` | DECIMAL(10,2) | Consumo acumulado mínimo en dólares |
+
+    **Tabla `clientes`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_cliente` | INT PK | Identificador del cliente |
+    | `id_usuario` | INT FK | Cuenta de usuario asociada |
+    | `id_rango` | INT FK | Rango de fidelización actual (default: 1, Bronce) |
+    | `cliente_consumo_acumulado` | DECIMAL(10,2) | Total consumido en dólares |
+    | `cliente_total_pedidos` | INT | Número total de pedidos realizados |
+
+    **Datos semilla — rangos:**
+
+    | Rango | Descuento | Min. pedidos | Min. consumo |
+    |---|---|---|---|
+    | Bronce | 5% | 1 | $0.00 |
+    | Plata | 10% | 5 | $100.00 |
+    | Oro | 15% | 15 | $300.00 |
+
+    **Datos semilla — usuarios iniciales:**
+
+    El esquema crea dos usuarios de sistema. El administrador principal con email `admin@saborcuscatleco.com` con rol `Administrador` asignado, y un usuario genérico `Consumidor Final` (`anonimo@saborcuscatleco.com`) registrado como cliente de rango Bronce, utilizado para pedidos sin cliente identificado.
+  </Accordion>
+
+  <Accordion title="Mesas y reservaciones" icon="utensils">
+    Modela la distribución física del salón y el sistema de reservaciones de los clientes.
+
+    **Tabla `mesas`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_mesa` | INT PK | Identificador único de la mesa |
+    | `mesa_numero` | INT UNIQUE | Número visible de la mesa |
+    | `mesa_capacidad` | INT | Número de comensales que admite |
+    | `mesa_ubicacion` | VARCHAR(45) | Zona física (ej. `Terraza`, `Barra`) |
+    | `mesa_estado` | ENUM | `Disponible`, `Ocupada`, `Reservada`, `Limpieza`, `Mantenimiento` |
+    | `mesa_actualizada_por` | INT FK | Usuario que realizó el último cambio de estado |
+    | `mesa_actualizada_en` | DATETIME | Timestamp de la última actualización (auto) |
+
+    **Tabla `reservaciones`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_reservacion` | INT PK | Identificador de la reservación |
+    | `id_cliente` | INT FK | Cliente que reservó |
+    | `id_mesa` | INT FK | Mesa asignada (puede ser NULL hasta confirmar) |
+    | `reservacion_fecha` | DATETIME | Fecha y hora de la reservación |
+    | `reservacion_num_personas` | INT | Cantidad de personas |
+    | `reservacion_preferencias` | TEXT | Notas o preferencias del cliente |
+    | `reservacion_estado` | ENUM | `Pendiente`, `Confirmada`, `Cancelada` |
+
+    **Datos semilla — mesas iniciales:**
+
+    | # Mesa | Capacidad | Ubicación |
+    |---|---|---|
+    | 1–2 | 4 personas | Zona Interior |
+    | 3–4 | 6 personas | Terraza |
+    | 5–6 | 2 personas | Barra |
+    | 7–8 | 8 personas | Salón VIP |
+  </Accordion>
+
+  <Accordion title="Menú" icon="book-open">
+    Organiza los platillos del restaurante en categorías para su presentación y gestión.
+
+    **Tabla `categorias`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_categoria` | INT PK | Identificador de la categoría |
+    | `categoria_nombre` | VARCHAR(100) UNIQUE | Nombre de la categoría |
+    | `categoria_descripcion` | VARCHAR(200) | Descripción breve |
+    | `categoria_activo` | BOOLEAN | Controla visibilidad en el menú |
+
+    **Tabla `platillos`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_platillo` | INT PK | Identificador del platillo |
+    | `id_categoria` | INT FK | Categoría a la que pertenece |
+    | `platillo_nombre` | VARCHAR(100) | Nombre del platillo |
+    | `platillo_descripcion` | TEXT | Descripción detallada |
+    | `platillo_precio` | DECIMAL(10,2) | Precio en dólares |
+    | `platillo_imagen_url` | VARCHAR(255) | URL de la imagen del platillo |
+    | `platillo_disponible` | BOOLEAN | Disponibilidad para pedidos |
+    | `platillo_actualizado_por` | INT FK | Usuario que realizó la última modificación |
+
+    **Datos semilla — categorías iniciales:**
+
+    | Categoría | Descripción |
+    |---|---|
+    | Entradas | Platillos para comenzar |
+    | Platos Fuertes | Platos principales |
+    | Bebidas | Bebidas frías y calientes |
+    | Postres | Dulces y postres |
+  </Accordion>
+
+  <Accordion title="Pedidos" icon="receipt">
+    Registra el ciclo de vida completo de cada pedido, desde su creación hasta su entrega o cancelación.
+
+    **Tabla `pedidos`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_pedido` | INT PK | Identificador del pedido |
+    | `id_mesa` | INT FK | Mesa asociada (NULL para pedidos para llevar) |
+    | `id_mesero` | INT FK | Usuario mesero que tomó el pedido |
+    | `id_cliente` | INT FK | Cliente asociado (NULL si es anónimo) |
+    | `pedido_estado` | ENUM | `Pendiente`, `EnPreparacion`, `Listo`, `Entregado`, `Cerrado`, `Cancelado` |
+    | `pedido_tipo` | ENUM | `Salon` o `Llevar` |
+    | `pedido_total` | DECIMAL(10,2) | Total calculado del pedido |
+    | `pedido_fecha_hora` | DATETIME | Timestamp de creación |
+    | `pedido_enviado_cocina_en` | DATETIME | Cuándo se envió a cocina |
+    | `pedido_listo_en` | DATETIME | Cuándo cocina marcó el pedido como listo |
+    | `pedido_entregado_en` | DATETIME | Cuándo se entregó al cliente |
+    | `pedido_cancelado_en` | DATETIME | Timestamp de cancelación |
+    | `pedido_cancelado_por` | INT FK | Usuario que canceló el pedido |
+    | `pedido_cancelado_motivo` | VARCHAR(200) | Motivo de cancelación |
+
+    **Tabla `detalle_pedido`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_detalle` | INT PK | Identificador del detalle |
+    | `id_pedido` | INT FK | Pedido al que pertenece (CASCADE DELETE) |
+    | `id_platillo` | INT FK | Platillo solicitado |
+    | `detalle_pedido_cantidad` | INT | Cantidad pedida |
+    | `detalle_pedido_precio_unitario` | DECIMAL(10,2) | Precio al momento del pedido |
+    | `detalle_pedido_subtotal` | DECIMAL(10,2) | Cantidad × precio unitario |
+    | `detalle_pedido_notas` | VARCHAR(200) | Instrucciones especiales del cliente |
+
+    <Tip>
+      El precio unitario se almacena en `detalle_pedido` al momento de crear el detalle, no como referencia al precio actual del platillo. Esto garantiza que cambios futuros en el precio no alteren el historial de pedidos.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Facturación" icon="file-invoice">
+    Gestiona la emisión de documentos fiscales electrónicos para consumidor final y crédito fiscal.
+
+    **Tabla `facturas`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_factura` | INT PK | Identificador de la factura |
+    | `id_pedido` | INT FK | Pedido que origina la factura |
+    | `id_cajero` | INT FK | Usuario cajero que emitió la factura |
+    | `factura_correlativo` | VARCHAR(20) UNIQUE | Número correlativo del documento fiscal |
+    | `factura_tipo` | ENUM | `ConsumidorFinal` o `CreditoFiscal` |
+    | `factura_nombre_cliente` | VARCHAR(100) | Nombre del receptor |
+    | `factura_dui_nit` | VARCHAR(20) | DUI o NIT del receptor |
+    | `factura_nrc` | VARCHAR(20) | NRC (solo para crédito fiscal) |
+    | `factura_subtotal` | DECIMAL(10,2) | Monto antes de IVA |
+    | `factura_iva` | DECIMAL(10,2) | IVA calculado |
+    | `factura_total` | DECIMAL(10,2) | Total a pagar |
+    | `factura_enviada_correo` | BOOLEAN | Si la factura fue enviada por email |
+    | `factura_anulada` | BOOLEAN | Si la factura fue anulada |
+
+    **Tabla `detalle_factura`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_detalle` | INT PK | Identificador del detalle |
+    | `id_factura` | INT FK | Factura a la que pertenece (CASCADE DELETE) |
+    | `id_platillo` | INT FK | Platillo facturado (puede ser NULL) |
+    | `detalle_factura_descripcion` | VARCHAR(200) | Descripción del ítem facturado |
+    | `detalle_factura_cantidad` | INT | Cantidad |
+    | `detalle_factura_precio_unitario` | DECIMAL(10,2) | Precio unitario |
+    | `detalle_factura_subtotal` | DECIMAL(10,2) | Subtotal del ítem |
+
+    <Warning>
+      El campo `factura_anulada` no elimina el registro; solo lo marca como inválido. Las facturas anuladas deben mantenerse en la base de datos para efectos contables y de auditoría.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Notificaciones" icon="bell">
+    Almacena las notificaciones internas generadas por el sistema para informar a los usuarios sobre eventos relevantes.
+
+    **Tabla `notificaciones`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_notificacion` | INT PK | Identificador único de la notificación |
+    | `id_usuario` | INT FK | Usuario destinatario |
+    | `id_pedido` | INT FK | Pedido relacionado (puede ser NULL) |
+    | `notificacion_tipo` | ENUM | `Reservacion`, `Pedido` o `Factura` |
+    | `notificacion_asunto` | VARCHAR(200) | Título o asunto de la notificación |
+    | `notificacion_mensaje` | TEXT | Cuerpo del mensaje |
+    | `notificacion_enviada` | BOOLEAN | Si fue enviada al canal externo (ej. email) |
+    | `notificacion_leida` | BOOLEAN | Si el usuario la ha marcado como leída |
+    | `notificacion_leida_en` | DATETIME | Timestamp en que fue leída |
+    | `notificacion_fecha` | DATETIME | Timestamp de creación |
+  </Accordion>
+
+  <Accordion title="Auditoría" icon="clipboard-list">
+    Registra todas las acciones de mutación realizadas por usuarios autenticados sobre las entidades críticas del sistema.
+
+    **Tabla `auditoria_log`**
+    | Columna | Tipo | Descripción |
+    |---|---|---|
+    | `id_auditoria` | INT PK | Identificador del registro de auditoría |
+    | `id_usuario` | INT FK | ID del usuario que ejecutó la acción |
+    | `usuario_nombre` | VARCHAR(100) | Nombre del usuario en el momento del evento |
+    | `usuario_rol` | VARCHAR(50) | Rol activo del usuario en el momento del evento |
+    | `accion` | VARCHAR(50) | Tipo de acción (ej. `CREAR`, `EDITAR`, `ELIMINAR`) |
+    | `modulo` | VARCHAR(50) | Módulo afectado (ej. `mesas`, `platillos`, `pedidos`) |
+    | `entidad_id` | INT | ID del registro afectado |
+    | `descripcion` | TEXT | Descripción legible del evento |
+    | `datos_anteriores` | JSON | Snapshot del estado previo a la modificación |
+    | `datos_nuevos` | JSON | Snapshot del estado posterior a la modificación |
+    | `fecha_hora` | DATETIME | Timestamp exacto del evento |
+
+    Los índices definidos sobre esta tabla optimizan las consultas más frecuentes del panel de auditoría:
+
+    | Índice | Columnas |
+    |---|---|
+    | `idx_auditoria_usuario` | `id_usuario` |
+    | `idx_auditoria_accion` | `accion` |
+    | `idx_auditoria_modulo` | `modulo` |
+    | `idx_auditoria_fecha` | `fecha_hora` |
+    | `idx_auditoria_entidad` | `modulo`, `entidad_id` |
+
+    Para más detalles sobre el funcionamiento del sistema de auditoría, consulta la página [Auditoría y Trazabilidad](/base-de-datos/auditoria).
+  </Accordion>
+
+</AccordionGroup>

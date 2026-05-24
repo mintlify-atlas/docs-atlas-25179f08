@@ -1,0 +1,383 @@
+---
+title: 'API de platillos: crear, editar y filtrar menú en CUSCATLECO'
+description: 'Endpoints para crear, listar, editar y activar platillos del menú. Los endpoints de escritura aceptan multipart/form-data con imagen.'
+keywords: ['platillos', 'menú', 'gestionar_menu', 'ver_menu', 'imagen', 'multipart']
+sidebarTitle: 'Platillos'
+icon: 'utensils'
+---
+
+El módulo de platillos gestiona el catálogo del menú del restaurante. Los endpoints de creación y edición aceptan imágenes mediante `multipart/form-data`, lo que permite subir fotografías de cada platillo. Las operaciones de lectura requieren el permiso `ver_menu`, mientras que la creación, edición y cambio de disponibilidad requieren `gestionar_menu`. Todos los endpoints requieren sesión activa y registran auditoría.
+
+<Warning>
+  Los endpoints `POST /api/platillos` y `PUT /api/platillos/:id` usan `Content-Type: multipart/form-data`. No envíes `application/json` en estas solicitudes, ya que el servidor no procesará el archivo de imagen.
+</Warning>
+
+---
+
+## POST /api/platillos
+
+Crea un nuevo platillo en el menú. El nombre debe ser único. Si se adjunta un archivo de imagen, se almacena en el servidor y se guarda la ruta relativa `/uploads/<nombre_archivo>`.
+
+**Permiso requerido:** `gestionar_menu`  
+**Content-Type:** `multipart/form-data`
+
+### Cuerpo de la solicitud
+
+<ParamField body="id_categoria" type="integer" required>
+  ID de la categoría a la que pertenece el platillo. Las categorías disponibles son: `Entradas`, `Platos Fuertes`, `Bebidas`, `Postres`.
+</ParamField>
+
+<ParamField body="platillo_nombre" type="string" required>
+  Nombre del platillo. Debe ser único en el sistema (máximo 100 caracteres).
+</ParamField>
+
+<ParamField body="platillo_precio" type="number" required>
+  Precio del platillo en dólares. Acepta hasta dos decimales. Ejemplo: `12.50`.
+</ParamField>
+
+<ParamField body="platillo_descripcion" type="string">
+  Descripción del platillo, ingredientes o presentación. Texto libre.
+</ParamField>
+
+<ParamField body="platillo_disponible" type="boolean">
+  Disponibilidad inicial del platillo. Si se omite, el valor por defecto es `true`.
+</ParamField>
+
+<ParamField body="imagen" type="file">
+  Archivo de imagen del platillo (JPEG, PNG, etc.). El campo del formulario debe llamarse exactamente `imagen`. Si se omite, `platillo_imagen_url` queda como `null`.
+</ParamField>
+
+### Respuesta exitosa — 200
+
+<ResponseField name="mensaje" type="string">
+  Mensaje de confirmación: `"Platillo creado correctamente"`.
+</ResponseField>
+
+<ResponseField name="id_platillo" type="integer">
+  ID asignado al nuevo platillo.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl -X POST http://localhost:3000/api/platillos \
+  -b cookies.txt \
+  -F "id_categoria=2" \
+  -F "platillo_nombre=Pupusa de Chicharrón" \
+  -F "platillo_descripcion=Pupusa rellena de chicharrón molido con curtido y salsa de tomate" \
+  -F "platillo_precio=3.50" \
+  -F "platillo_disponible=true" \
+  -F "imagen=@/ruta/a/pupusa.jpg"
+```
+
+```json Respuesta 200
+{
+  "mensaje": "Platillo creado correctamente",
+  "id_platillo": 15
+}
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `400`  | Faltan campos requeridos (`id_categoria`, `platillo_nombre` o `platillo_precio`), o el nombre ya existe. |
+| `401`  | Sesión no activa. |
+| `403`  | Sin permiso `gestionar_menu`. |
+
+---
+
+## GET /api/platillos
+
+Lista todos los platillos del menú. Los usuarios con rol `Administrador` ven todos los platillos incluyendo los no disponibles. El resto de roles solo ven platillos con `platillo_disponible = true`.
+
+**Permiso requerido:** `ver_menu`
+
+### Parámetros de consulta
+
+<ParamField query="categoria_id" type="integer">
+  Filtra platillos por categoría. Ejemplo: `?categoria_id=2`.
+</ParamField>
+
+<ParamField query="nombre" type="string">
+  Filtra por nombre del platillo (búsqueda parcial, sin distinción de mayúsculas). Ejemplo: `?nombre=pupusa`.
+</ParamField>
+
+<ParamField query="orderBy" type="string" default="nombre">
+  Campo por el que ordenar. Valores válidos: `nombre`, `precio`.
+</ParamField>
+
+<ParamField query="orderDir" type="string" default="ASC">
+  Dirección del orden. Valores válidos: `ASC`, `DESC`.
+</ParamField>
+
+### Respuesta exitosa — 200
+
+Retorna un array de objetos platillo.
+
+<ResponseField name="id_platillo" type="integer">
+  Identificador único del platillo.
+</ResponseField>
+
+<ResponseField name="id_categoria" type="integer">
+  ID de la categoría del platillo.
+</ResponseField>
+
+<ResponseField name="categoria_nombre" type="string">
+  Nombre de la categoría. Ejemplo: `"Platos Fuertes"`.
+</ResponseField>
+
+<ResponseField name="platillo_nombre" type="string">
+  Nombre del platillo.
+</ResponseField>
+
+<ResponseField name="platillo_descripcion" type="string">
+  Descripción del platillo. Puede ser `null`.
+</ResponseField>
+
+<ResponseField name="platillo_precio" type="number">
+  Precio del platillo en dólares.
+</ResponseField>
+
+<ResponseField name="platillo_imagen_url" type="string">
+  Ruta relativa de la imagen. Ejemplo: `"/uploads/pupusa.jpg"`. Puede ser `null`.
+</ResponseField>
+
+<ResponseField name="platillo_disponible" type="boolean">
+  Indica si el platillo está disponible para pedidos.
+</ResponseField>
+
+<ResponseField name="fecha_creacion" type="string">
+  Fecha de creación en formato `YYYY-MM-DD`.
+</ResponseField>
+
+<ResponseField name="fecha_actualizacion" type="string">
+  Fecha de la última actualización en formato `YYYY-MM-DD`.
+</ResponseField>
+
+<ResponseField name="actualizado_por" type="string">
+  Nombre del usuario que realizó la última modificación. Puede ser `null`.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl "http://localhost:3000/api/platillos?orderBy=precio&orderDir=ASC" \
+  -b cookies.txt
+```
+
+```json Respuesta 200
+[
+  {
+    "id_platillo": 15,
+    "id_categoria": 2,
+    "categoria_nombre": "Platos Fuertes",
+    "platillo_nombre": "Pupusa de Chicharrón",
+    "platillo_descripcion": "Pupusa rellena de chicharrón molido",
+    "platillo_precio": 3.50,
+    "platillo_imagen_url": "/uploads/pupusa.jpg",
+    "platillo_disponible": true,
+    "fecha_creacion": "2026-05-20",
+    "fecha_actualizacion": "2026-05-20",
+    "actualizado_por": "Administrador"
+  }
+]
+```
+
+---
+
+## GET /api/platillos/:id
+
+Obtiene un platillo específico por su ID. Los roles que no son `Administrador` solo pueden acceder a platillos con `platillo_disponible = true`.
+
+**Permiso requerido:** `ver_menu`
+
+### Parámetros de ruta
+
+<ParamField path="id" type="integer" required>
+  ID del platillo a consultar.
+</ParamField>
+
+### Respuesta exitosa — 200
+
+<ResponseField name="id_platillo" type="integer">
+  Identificador único del platillo.
+</ResponseField>
+
+<ResponseField name="id_categoria" type="integer">
+  ID de la categoría del platillo.
+</ResponseField>
+
+<ResponseField name="categoria_nombre" type="string">
+  Nombre de la categoría.
+</ResponseField>
+
+<ResponseField name="platillo_nombre" type="string">
+  Nombre del platillo.
+</ResponseField>
+
+<ResponseField name="platillo_descripcion" type="string">
+  Descripción del platillo.
+</ResponseField>
+
+<ResponseField name="platillo_precio" type="number">
+  Precio del platillo.
+</ResponseField>
+
+<ResponseField name="platillo_imagen_url" type="string">
+  Ruta relativa de la imagen del platillo.
+</ResponseField>
+
+<ResponseField name="platillo_disponible" type="boolean">
+  Disponibilidad actual del platillo.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl http://localhost:3000/api/platillos/15 \
+  -b cookies.txt
+```
+
+```json Respuesta 200
+{
+  "id_platillo": 15,
+  "id_categoria": 2,
+  "categoria_nombre": "Platos Fuertes",
+  "platillo_nombre": "Pupusa de Chicharrón",
+  "platillo_descripcion": "Pupusa rellena de chicharrón molido",
+  "platillo_precio": 3.50,
+  "platillo_imagen_url": "/uploads/pupusa.jpg",
+  "platillo_disponible": true
+}
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `401`  | Sesión no activa. |
+| `403`  | Sin permiso `ver_menu`. |
+| `404`  | Platillo no encontrado, o no está disponible y el usuario no es Administrador. |
+
+---
+
+## PUT /api/platillos/:id
+
+Edita un platillo existente. Solo se pueden editar platillos que están activos (`platillo_disponible = true`). Si no se adjunta una nueva imagen, se conserva la imagen existente.
+
+**Permiso requerido:** `gestionar_menu`  
+**Content-Type:** `multipart/form-data`
+
+### Parámetros de ruta
+
+<ParamField path="id" type="integer" required>
+  ID del platillo a editar.
+</ParamField>
+
+### Cuerpo de la solicitud
+
+<ParamField body="id_categoria" type="integer" required>
+  ID de la categoría del platillo.
+</ParamField>
+
+<ParamField body="platillo_nombre" type="string" required>
+  Nombre actualizado del platillo. Si cambia, no debe coincidir con el nombre de otro platillo.
+</ParamField>
+
+<ParamField body="platillo_precio" type="number" required>
+  Precio actualizado del platillo.
+</ParamField>
+
+<ParamField body="platillo_descripcion" type="string">
+  Descripción actualizada del platillo.
+</ParamField>
+
+<ParamField body="imagen" type="file">
+  Nueva imagen del platillo. Si se omite, se conserva la imagen actual. El campo debe llamarse `imagen`.
+</ParamField>
+
+### Respuesta exitosa — 200
+
+<ResponseField name="mensaje" type="string">
+  Mensaje de confirmación: `"Platillo actualizado correctamente"`.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl -X PUT http://localhost:3000/api/platillos/15 \
+  -b cookies.txt \
+  -F "id_categoria=2" \
+  -F "platillo_nombre=Pupusa de Chicharrón y Queso" \
+  -F "platillo_descripcion=Pupusa rellena de chicharrón y queso con curtido" \
+  -F "platillo_precio=4.00" \
+  -F "imagen=@/ruta/a/nueva_pupusa.jpg"
+```
+
+```json Respuesta 200
+{
+  "mensaje": "Platillo actualizado correctamente"
+}
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `400`  | El nombre ya existe en otro platillo. |
+| `401`  | Sesión no activa. |
+| `403`  | Sin permiso `gestionar_menu`, o el platillo está inactivo (`platillo_disponible = false`). |
+| `404`  | Platillo no encontrado. |
+
+---
+
+## PATCH /api/platillos/:id/estado
+
+Activa o desactiva la disponibilidad de un platillo sin modificar sus demás datos. Un platillo desactivado no aparece en el menú para roles que no sean Administrador.
+
+**Permiso requerido:** `gestionar_menu`
+
+### Parámetros de ruta
+
+<ParamField path="id" type="integer" required>
+  ID del platillo al que se desea cambiar la disponibilidad.
+</ParamField>
+
+### Cuerpo de la solicitud
+
+<ParamField body="platillo_disponible" type="boolean" required>
+  Nuevo estado de disponibilidad. `true` para activar, `false` para desactivar.
+</ParamField>
+
+### Respuesta exitosa — 200
+
+<ResponseField name="mensaje" type="string">
+  Mensaje de confirmación: `"Estado del platillo actualizado correctamente"`.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl -X PATCH http://localhost:3000/api/platillos/15/estado \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "platillo_disponible": false
+  }'
+```
+
+```json Respuesta 200
+{
+  "mensaje": "Estado del platillo actualizado correctamente"
+}
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `400`  | El campo `platillo_disponible` no fue enviado. |
+| `401`  | Sesión no activa. |
+| `403`  | Sin permiso `gestionar_menu`. |
+| `404`  | Platillo no encontrado. |

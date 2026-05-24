@@ -1,0 +1,69 @@
+---
+title: "Introducción a CUSCATLECO: Sistema POS para Restaurantes"
+description: "Conoce CUSCATLECO, el sistema POS del Restaurante Sabor Cuscatleco: sus funcionalidades principales, stack tecnológico y los roles de usuario disponibles."
+---
+
+Esta página presenta CUSCATLECO, el sistema de punto de venta (POS) diseñado para el Restaurante Sabor Cuscatleco. Aquí encontrarás una visión general del sistema, las funcionalidades que ofrece, la tecnología sobre la que está construido y los roles de acceso disponibles para cada área del restaurante.
+
+## ¿Qué es CUSCATLECO?
+
+CUSCATLECO es una aplicación web de punto de venta desarrollada específicamente para el Restaurante Sabor Cuscatleco. Centraliza en una sola plataforma todas las operaciones del restaurante: la gestión del salón y las mesas, la toma y seguimiento de pedidos, la administración del menú, el control de empleados y la emisión de facturas electrónicas. Cada rol operativo — Administrador, Mesero, Cajero y Cocina — accede a un panel propio con las herramientas que necesita para su función.
+
+## Funcionalidades principales
+
+<CardGroup cols={2}>
+  <Card title="Gestión de mesas" icon="table" href="/funcionalidades/gestion-mesas">
+    Crea y administra mesas, consulta su estado en tiempo real y asígnalas a pedidos activos.
+  </Card>
+  <Card title="Gestión de pedidos" icon="receipt" href="/funcionalidades/gestion-pedidos">
+    Toma pedidos por mesa, añade o modifica platillos y sigue el estado de cada orden hasta su entrega.
+  </Card>
+  <Card title="Menú y platillos" icon="utensils" href="/funcionalidades/menu-platillos">
+    Administra categorías, precios, imágenes y disponibilidad de cada platillo del menú.
+  </Card>
+  <Card title="Facturación electrónica" icon="file-invoice" href="/funcionalidades/facturacion">
+    Emite facturas de Consumidor Final y Crédito Fiscal con IVA calculado automáticamente.
+  </Card>
+  <Card title="Gestión de empleados" icon="id-badge" href="/funcionalidades/gestion-empleados">
+    Registra empleados, asigna roles y gestiona el acceso al sistema desde el panel de administración.
+  </Card>
+  <Card title="Roles y acceso" icon="shield-check" href="/roles/descripcion-roles">
+    Controla qué puede ver y hacer cada usuario según su rol dentro del restaurante.
+  </Card>
+</CardGroup>
+
+## Stack tecnológico
+
+CUSCATLECO es una aplicación Node.js de servidor único. La siguiente tabla resume las dependencias principales:
+
+| Tecnología | Versión | Propósito |
+|---|---|---|
+| **Node.js** | LTS | Entorno de ejecución del servidor |
+| **Express** | 5.x | Framework HTTP y enrutamiento |
+| **MySQL** | — | Base de datos relacional (via `mysql2`) |
+| **bcrypt** | 6.x | Hash seguro de contraseñas |
+| **express-session** | 1.x | Gestión de sesiones de usuario |
+| **multer** | 2.x | Carga de imágenes para platillos |
+
+El servidor corre en el puerto `3000` y sirve archivos estáticos desde la carpeta `public/`. Las sesiones tienen una duración de 30 minutos con renovación automática en cada petición.
+
+## Roles de usuario
+
+El sistema define cuatro roles operativos, cada uno con su propio panel y conjunto de permisos:
+
+- **Administrador** — Acceso completo al sistema. Gestiona empleados, roles, mesas, platillos y configuración general del restaurante.
+- **Mesero** — Toma pedidos en mesa, consulta el menú y hace seguimiento del estado de las órdenes asignadas a su área.
+- **Cajero** — Procesa el cierre de pedidos, emite facturas electrónicas de Consumidor Final o Crédito Fiscal y gestiona los cobros.
+- **Cocina** — Visualiza los pedidos activos en orden de llegada y actualiza su estado conforme se preparan los platillos.
+
+<Info>
+  Cada rol accede a una ruta protegida del servidor (`/admin`, `/mesero`, `/cajero`, `/cocina`). Intentar acceder a una ruta sin el permiso correspondiente redirige a la página de error 403.
+</Info>
+
+## Próximos pasos
+
+Para instalar y poner en marcha CUSCATLECO en tu entorno local, consulta la guía de instalación.
+
+<Card title="Instalación" icon="download" href="/instalacion">
+  Requisitos, pasos de instalación y configuración inicial de la base de datos.
+</Card>

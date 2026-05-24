@@ -1,0 +1,98 @@
+---
+title: "Facturación: emitir Consumidor Final y Crédito Fiscal"
+description: "Emite facturas electrónicas en CUSCATLECO: diferencias entre ConsumidorFinal y CreditoFiscal, campos requeridos, correlativo y anulación."
+keywords: ["facturación", "consumidor final", "crédito fiscal", "IVA", "correlativo", "cajero"]
+---
+
+El módulo de facturación permite al cajero emitir comprobantes fiscales directamente desde el sistema una vez que el mesero marca un pedido como entregado. CUSCATLECO soporta dos tipos de factura —Consumidor Final y Crédito Fiscal— calcula el IVA automáticamente y asigna un correlativo único a cada documento. Las facturas quedan registradas en el sistema y pueden anularse o enviarse por correo electrónico al cliente.
+
+## Tipos de factura
+
+<Tabs>
+  <Tab title="Consumidor Final">
+    Este tipo se usa para la mayoría de las ventas al público general. Es la opción más rápida: el nombre del cliente es opcional y no se requieren datos fiscales adicionales.
+
+    **Datos requeridos:**
+    - Ninguno obligatorio.
+
+    **Datos opcionales:**
+    - Nombre del cliente (para personalizar el documento).
+
+    **Cuándo usarla:** Siempre que el cliente no solicite Crédito Fiscal con deducción de IVA.
+  </Tab>
+  <Tab title="Crédito Fiscal">
+    Este tipo se emite a empresas o contribuyentes que necesitan deducir el IVA. Requiere los datos fiscales completos del receptor.
+
+    **Datos requeridos:**
+    - Nombre o razón social del cliente
+    - DUI o NIT del receptor
+    - NRC (Número de Registro de Contribuyente)
+    - Dirección fiscal del receptor
+
+    **Cuándo usarla:** Cuando el cliente lo solicita expresamente y presenta su documentación fiscal. Verifica que los datos sean correctos antes de emitir, ya que la factura queda registrada en el sistema.
+  </Tab>
+</Tabs>
+
+## Campos de una factura
+
+| Campo | Descripción |
+|---|---|
+| **Correlativo** | Número único y consecutivo que identifica cada factura. Se asigna automáticamente. |
+| **Tipo** | `ConsumidorFinal` o `CreditoFiscal`. |
+| **Nombre del cliente** | Nombre o razón social del receptor (opcional en Consumidor Final). |
+| **DUI / NIT** | Documento de identidad o NIT fiscal (solo Crédito Fiscal). |
+| **NRC** | Número de Registro de Contribuyente (solo Crédito Fiscal). |
+| **Dirección** | Dirección fiscal del receptor (solo Crédito Fiscal). |
+| **Subtotal** | Monto antes de IVA. |
+| **IVA** | Impuesto al Valor Agregado calculado automáticamente. |
+| **Total** | Monto final que incluye IVA. |
+| **Fecha de emisión** | Fecha y hora en que se generó la factura. |
+
+## Descuentos por rango de cliente
+
+Si el pedido tiene un cliente registrado vinculado, el sistema aplica automáticamente el descuento correspondiente a su rango de fidelidad antes de calcular el IVA y el total:
+
+| Rango | Descuento | Condición |
+|---|---|---|
+| Bronce | 5 % | Desde el primer pedido registrado |
+| Plata | 10 % | 5 pedidos o $100 acumulados |
+| Oro | 15 % | 15 pedidos o $300 acumulados |
+
+## Flujo de facturación
+
+<Steps>
+  <Step title="Accede al panel del cajero">
+    Ingresa al sistema con el rol **Cajero**. Verás la lista de pedidos en estado **Entregado** que están pendientes de facturar.
+  </Step>
+  <Step title="Selecciona el pedido a facturar">
+    Haz clic en el pedido que deseas facturar. Se mostrará el resumen del pedido con los platillos, cantidades y el total calculado.
+  </Step>
+  <Step title="Elige el tipo de factura">
+    Selecciona **Consumidor Final** o **Crédito Fiscal** según lo que solicite el cliente.
+  </Step>
+  <Step title="Ingresa los datos del cliente">
+    Para **Consumidor Final**, puedes dejar el nombre en blanco o ingresarlo si el cliente lo solicita. Para **Crédito Fiscal**, completa todos los campos fiscales obligatorios: nombre, DUI/NIT, NRC y dirección.
+  </Step>
+  <Step title="Genera la factura">
+    Haz clic en **Emitir factura**. El sistema calcula el subtotal, el IVA y el total final, asigna el correlativo y registra la factura. El pedido pasa automáticamente al estado **Cerrado** y la mesa queda **Disponible**.
+  </Step>
+  <Step title="Entrega el comprobante">
+    Imprime o envía la factura al cliente. Si el cliente proporcionó un correo electrónico, puedes usar la opción **Enviar por correo** para que reciba el documento directamente en su bandeja de entrada.
+  </Step>
+</Steps>
+
+<Note>
+  El correlativo se asigna automáticamente en orden ascendente. No es posible editarlo manualmente para garantizar la integridad del registro fiscal.
+</Note>
+
+## Anulación de facturas
+
+Si necesitas anular una factura ya emitida, localízala en el historial de facturación y selecciona **Anular**. El sistema marca la factura como anulada sin eliminarla, conservando el registro completo para fines de auditoría.
+
+<Warning>
+  Anular una factura **no** devuelve el pedido al estado anterior ni vuelve a poner la mesa como ocupada. Si necesitas generar una nueva factura para el mismo pedido, deberás crear una factura nueva sobre el mismo registro de pedido. Consulta con tu administrador si tienes dudas sobre el procedimiento correcto.
+</Warning>
+
+## Envío de factura por correo
+
+Después de emitir una factura, puedes usar el botón **Enviar por correo** para despacharla al cliente. El sistema registra si la factura fue enviada exitosamente. Esta opción solo está disponible si el cliente tiene una dirección de correo registrada en el sistema.

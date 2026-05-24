@@ -1,0 +1,280 @@
+---
+title: 'API de empleados: gestión de personal en CUSCATLECO'
+description: 'Endpoints CRUD para empleados del restaurante. Todos requieren gestionar_usuarios. El DELETE desactiva la cuenta sin borrar registros históricos.'
+keywords: ['empleados', 'usuarios', 'gestionar_usuarios', 'administrador', 'roles']
+sidebarTitle: 'Empleados'
+icon: 'users'
+---
+
+El módulo de empleados permite a los administradores gestionar el personal del restaurante. Todos los endpoints requieren el permiso `gestionar_usuarios`, el cual únicamente está asignado al rol **Administrador**. Los empleados se crean como usuarios activos en el sistema y se les asigna un rol que determina sus permisos dentro del POS.
+
+<Warning>
+  Solo usuarios con rol **Administrador** pueden acceder a estos endpoints. Cualquier otro rol recibirá una respuesta `403` al intentar consultarlos.
+</Warning>
+
+---
+
+## POST /api/empleados
+
+Crea un nuevo empleado en el sistema. El correo electrónico debe ser único. La contraseña se almacena cifrada con bcrypt (mínimo 8 caracteres). Al crearse, el empleado queda activo y con el rol especificado.
+
+**Permiso requerido:** `gestionar_usuarios`
+
+### Cuerpo de la solicitud
+
+<ParamField body="nombre" type="string" required>
+  Nombre completo del empleado (máximo 100 caracteres).
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  Correo electrónico del empleado. Debe ser único en el sistema. Se usa para iniciar sesión.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  Contraseña del empleado en texto plano. Debe tener al menos 8 caracteres. El servidor la cifra antes de almacenarla.
+</ParamField>
+
+<ParamField body="telefono" type="string" required>
+  Número de teléfono del empleado (máximo 15 caracteres).
+</ParamField>
+
+<ParamField body="rol" type="string" required>
+  Nombre del rol a asignar al empleado. Valores válidos: `Administrador`, `Mesero`, `Cajero`, `Cocina`.
+</ParamField>
+
+### Respuesta exitosa — 200
+
+<ResponseField name="mensaje" type="string">
+  Mensaje de confirmación: `"Empleado creado correctamente"`.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl -X POST http://localhost:3000/api/empleados \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "nombre": "María González",
+    "email": "maria.gonzalez@saborcuscatleco.com",
+    "password": "clave1234",
+    "telefono": "78901234",
+    "rol": "Mesero"
+  }'
+```
+
+```json Respuesta 200
+{
+  "mensaje": "Empleado creado correctamente"
+}
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `400`  | Faltan campos requeridos, la contraseña tiene menos de 8 caracteres, el email ya existe, o el rol especificado no existe en el sistema. |
+| `401`  | Sesión no activa. |
+| `403`  | Sin permiso `gestionar_usuarios`. |
+
+---
+
+## GET /api/empleados
+
+Lista todos los empleados activos del sistema. Los empleados eliminados (marcados como inactivos) no aparecen en este listado. Los resultados se ordenan de más reciente a más antiguo.
+
+**Permiso requerido:** `gestionar_usuarios`
+
+### Respuesta exitosa — 200
+
+Retorna un array de objetos empleado.
+
+<ResponseField name="id_usuario" type="integer">
+  Identificador único del empleado en el sistema.
+</ResponseField>
+
+<ResponseField name="usuario_nombre" type="string">
+  Nombre completo del empleado.
+</ResponseField>
+
+<ResponseField name="usuario_email" type="string">
+  Correo electrónico del empleado.
+</ResponseField>
+
+<ResponseField name="usuario_telefono" type="string">
+  Número de teléfono del empleado.
+</ResponseField>
+
+<ResponseField name="rol_nombre" type="string">
+  Nombre del rol asignado al empleado.
+</ResponseField>
+
+<ResponseField name="fecha_creacion" type="string">
+  Fecha en que se creó el empleado, en formato `YYYY-MM-DD`.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl http://localhost:3000/api/empleados \
+  -b cookies.txt
+```
+
+```json Respuesta 200
+[
+  {
+    "id_usuario": 5,
+    "usuario_nombre": "María González",
+    "usuario_email": "maria.gonzalez@saborcuscatleco.com",
+    "usuario_telefono": "78901234",
+    "rol_nombre": "Mesero",
+    "fecha_creacion": "2026-05-20"
+  },
+  {
+    "id_usuario": 3,
+    "usuario_nombre": "Carlos Pérez",
+    "usuario_email": "carlos.perez@saborcuscatleco.com",
+    "usuario_telefono": "72345678",
+    "rol_nombre": "Cajero",
+    "fecha_creacion": "2026-04-15"
+  }
+]
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `401`  | Sesión no activa. |
+| `403`  | Sin permiso `gestionar_usuarios`. |
+| `500`  | Error interno al consultar los empleados. |
+
+---
+
+## DELETE /api/empleados/:id
+
+Desactiva a un empleado del sistema. La operación no elimina físicamente el registro; en su lugar, marca el campo `usuario_activo` como `false`, lo que impide que el empleado pueda iniciar sesión y lo excluye del listado.
+
+**Permiso requerido:** `gestionar_usuarios`
+
+### Parámetros de ruta
+
+<ParamField path="id" type="integer" required>
+  ID del empleado a desactivar.
+</ParamField>
+
+### Respuesta exitosa — 200
+
+<ResponseField name="mensaje" type="string">
+  Mensaje de confirmación: `"Empleado eliminado correctamente"`.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl -X DELETE http://localhost:3000/api/empleados/5 \
+  -b cookies.txt
+```
+
+```json Respuesta 200
+{
+  "mensaje": "Empleado eliminado correctamente"
+}
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `401`  | Sesión no activa. |
+| `403`  | Sin permiso `gestionar_usuarios`. |
+| `500`  | Error interno al desactivar el empleado. |
+
+<Info>
+  La eliminación es una desactivación lógica. Los pedidos, auditorías y facturas asociadas al empleado conservan su referencia histórica. Si necesitas reactivar un empleado, deberás hacerlo directamente en la base de datos o mediante una funcionalidad administrativa futura.
+</Info>
+
+---
+
+## PUT /api/empleados/:id
+
+Actualiza los datos de un empleado existente. Permite cambiar el nombre, correo, teléfono, rol y opcionalmente la contraseña. Si no se envía `password`, la contraseña actual se conserva sin cambios.
+
+**Permiso requerido:** `gestionar_usuarios`
+
+### Parámetros de ruta
+
+<ParamField path="id" type="integer" required>
+  ID del empleado a editar.
+</ParamField>
+
+### Cuerpo de la solicitud
+
+<ParamField body="nombre" type="string" required>
+  Nombre completo actualizado del empleado.
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  Correo electrónico actualizado. Debe ser único si se cambia.
+</ParamField>
+
+<ParamField body="telefono" type="string" required>
+  Teléfono actualizado del empleado.
+</ParamField>
+
+<ParamField body="rol" type="string" required>
+  Nuevo rol a asignar. Valores válidos: `Administrador`, `Mesero`, `Cajero`, `Cocina`.
+</ParamField>
+
+<ParamField body="password" type="string">
+  Nueva contraseña en texto plano. Si se omite, la contraseña actual no se modifica. Si se envía, debe tener al menos 8 caracteres.
+</ParamField>
+
+### Respuesta exitosa — 200
+
+<ResponseField name="mensaje" type="string">
+  Mensaje de confirmación: `"Empleado actualizado correctamente"`.
+</ResponseField>
+
+### Ejemplo
+
+```bash cURL
+curl -X PUT http://localhost:3000/api/empleados/5 \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "nombre": "María González Martínez",
+    "email": "maria.gonzalez@saborcuscatleco.com",
+    "telefono": "78901234",
+    "rol": "Cajero"
+  }'
+```
+
+```json Respuesta 200
+{
+  "mensaje": "Empleado actualizado correctamente"
+}
+```
+
+### Ejemplo con cambio de contraseña
+
+```bash cURL
+curl -X PUT http://localhost:3000/api/empleados/5 \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "nombre": "María González Martínez",
+    "email": "maria.gonzalez@saborcuscatleco.com",
+    "telefono": "78901234",
+    "rol": "Cajero",
+    "password": "nuevaclave2026"
+  }'
+```
+
+### Errores
+
+| Código | Descripción |
+|--------|-------------|
+| `401`  | Sesión no activa. |
+| `403`  | Sin permiso `gestionar_usuarios`. |
+| `500`  | Error interno al actualizar el empleado o el rol especificado no existe. |

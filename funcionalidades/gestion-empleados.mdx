@@ -1,0 +1,88 @@
+---
+title: "Gestión de empleados: crear roles y controlar acceso"
+description: "Registra empleados en CUSCATLECO, asigna roles (Administrador, Mesero, Cajero, Cocina) y administra contraseñas desde el panel de administración."
+keywords: ["empleados", "usuarios", "roles", "contraseña", "administrador", "mesero", "cajero", "cocina"]
+---
+
+La gestión de empleados permite al Administrador registrar a cada miembro del equipo en el sistema, asignarle el rol que corresponde a su área de trabajo y controlar su acceso a las funciones de CUSCATLECO. Cada empleado queda vinculado a un usuario del sistema con credenciales propias. Solo los usuarios con el permiso **gestionar_usuarios** —exclusivo del rol Administrador— pueden crear, editar y eliminar empleados.
+
+## Roles disponibles
+
+Al crear un empleado debes asignarle al menos un rol. Cada rol define qué módulos y acciones puede ver y ejecutar esa persona dentro del sistema:
+
+<CardGroup cols={2}>
+  <Card title="Administrador" icon="shield">
+    Acceso total al sistema. Gestiona mesas, menú, empleados, reservaciones y reportes.
+  </Card>
+  <Card title="Mesero" icon="hand-holding">
+    Crea y gestiona pedidos desde el salón. Puede ver el menú y actualizar el estado de las mesas.
+  </Card>
+  <Card title="Cajero" icon="cash-register">
+    Gestiona el cierre de pedidos y la emisión de facturas electrónicas.
+  </Card>
+  <Card title="Cocina" icon="chef-hat">
+    Visualiza los pedidos entrantes y actualiza su estado de preparación desde la pantalla de cocina.
+  </Card>
+</CardGroup>
+
+## Información de cada empleado
+
+| Campo | Descripción |
+|---|---|
+| **Nombre** | Nombre completo del empleado, visible en reportes y auditoría. |
+| **Correo electrónico** | Dirección de correo única que usa como nombre de usuario para iniciar sesión. |
+| **Contraseña** | Contraseña de acceso al sistema. Se almacena cifrada con bcrypt. |
+| **Teléfono** | Número de contacto del empleado. Campo obligatorio al crear. |
+| **Rol** | Rol o roles asignados que determinan su acceso al sistema. |
+
+## Cómo crear un nuevo empleado
+
+<Steps>
+  <Step title="Accede a la sección de Empleados">
+    Ingresa al sistema como **Administrador** y selecciona **Empleados** en el menú de navegación del panel de administración.
+  </Step>
+  <Step title="Abre el formulario de nuevo empleado">
+    Haz clic en **Agregar empleado**. Aparecerá un formulario con los datos requeridos.
+  </Step>
+  <Step title="Completa los datos del empleado">
+    Ingresa el **nombre completo**, el **correo electrónico** (debe ser único en el sistema) y el **número de teléfono** si lo tienes disponible.
+  </Step>
+  <Step title="Establece una contraseña">
+    Escribe una contraseña temporal para el empleado. La contraseña se almacena de forma segura en la base de datos usando cifrado bcrypt. Comunica esta contraseña al empleado de forma segura y pídele que la cambie en su primer ingreso.
+  </Step>
+  <Step title="Asigna el rol correspondiente">
+    Selecciona el rol que corresponde al área de trabajo del empleado: **Mesero**, **Cajero**, **Cocina** o **Administrador**. El rol determina a qué panel y funciones tendrá acceso desde el primer inicio de sesión.
+  </Step>
+  <Step title="Guarda el registro">
+    Haz clic en **Guardar**. El empleado ya puede iniciar sesión con su correo y contraseña. Aparecerá de inmediato en el listado de empleados del sistema.
+  </Step>
+</Steps>
+
+## Cómo editar un empleado
+
+Localiza al empleado en el listado y haz clic en **Editar**. Puedes actualizar el nombre, el correo, el teléfono y la contraseña. Si cambias el rol asignado, el acceso se ajusta de inmediato en el siguiente inicio de sesión del empleado.
+
+## Cómo eliminar un empleado
+
+Localiza al empleado en el listado y haz clic en **Eliminar**. Confirma la acción en el diálogo que aparece.
+
+<Warning>
+  Eliminar un empleado desde el panel desactiva su cuenta (`usuario_activo = false`), lo que impide que pueda iniciar sesión. El registro del usuario no se borra físicamente de la base de datos: los pedidos, facturas y entradas de auditoría en los que participó conservan su referencia histórica. Para reactivar una cuenta desactivada, un administrador con acceso directo a la base de datos puede volver a poner `usuario_activo = true`.
+</Warning>
+
+## Seguridad de contraseñas
+
+Todas las contraseñas se almacenan en la base de datos usando **bcrypt**, un algoritmo de cifrado diseñado específicamente para contraseñas. Esto significa que ni el Administrador ni nadie con acceso directo a la base de datos puede ver la contraseña original de un empleado.
+
+<Note>
+  Si un empleado olvida su contraseña, el Administrador puede establecer una nueva contraseña desde el formulario de edición. No existe una función de "recuperar contraseña" automática en esta versión del sistema.
+</Note>
+
+## Permisos de gestión de empleados
+
+| Acción | Administrador | Mesero | Cajero | Cocina |
+|---|:---:|:---:|:---:|:---:|
+| Ver listado de empleados | ✓ | — | — | — |
+| Crear empleado | ✓ | — | — | — |
+| Editar empleado | ✓ | — | — | — |
+| Eliminar empleado | ✓ | — | — | — |
